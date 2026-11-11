@@ -1,0 +1,7 @@
+build/
+_site/
+ios/Web/
+ios/Assets.xcassets/
+ios/*.xcodeproj
+.DS_Store
+__pycache__/

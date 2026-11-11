@@ -1,0 +1,25 @@
+name: Apple kurulumu
+
+# Paket kimliğini (com.cankyra.stainedglass) App Store Connect API ile kaydeder
+# ve uygulama kaydının olup olmadığını raporlar.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apple-setup.yml"
+      - "tools/asc_setup.py"
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install --quiet pyjwt cryptography
+      - name: Paket kimliği ve uygulama kaydı
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          BUNDLE_ID: com.cankyra.stainedglass
+        run: python3 tools/asc_setup.py

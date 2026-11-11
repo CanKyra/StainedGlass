@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#17132B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Stained Glass">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>Stained Glass · Vitray Dökümü Prototipi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=Unbounded:wght@600;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="hud">
+      <button class="icon-btn" id="btnMenu" aria-label="Albüm ve ayarlar" title="Albüm ve ayarlar">☰</button>
+      <div class="title">
+        <div class="eyebrow" id="lvlEyebrow">Seviye 1</div>
+        <div class="title-row">
+          <button class="nav-btn" id="btnPrev" aria-label="Önceki seviye" title="Önceki seviye">‹</button>
+          <h1 id="lvlName">Chartres</h1>
+          <button class="nav-btn" id="btnNext" aria-label="Sonraki seviye" title="Sonraki seviye">›</button>
+        </div>
+      </div>
+      <div class="goal" title="3 yıldız hedefi (en az döküm sayısı)">
+        <span>★★★</span><b id="goalN">5</b>
+      </div>
+      <div class="pours" id="pours"><b id="poursN">5</b><span>DÖKÜM</span></div>
+    </header>
+
+    <div id="tip" class="tip" hidden></div>
+
+    <main id="stage">
+      <svg id="board" viewBox="0 0 400 540" preserveAspectRatio="xMidYMid meet" aria-label="Vitray penceresi"></svg>
+    </main>
+
+    <div id="pots" class="pots" role="radiogroup" aria-label="Erimiş cam potaları"></div>
+
+    <div class="boosters">
+      <button class="boost" id="bCool" title="Bir sonraki döküm taşmaz"><i>❄</i><span>Soğut</span><em id="cCool">2</em></button>
+      <button class="boost" id="bPlus" title="+2 döküm hakkı"><i>+2</i><span>Döküm</span><em id="cPlus">1</em></button>
+      <button class="boost" id="bUndo" title="Son dökümü geri al"><i>↶</i><span>Geri al</span><em id="cUndo">3</em></button>
+      <button class="boost ghost" id="bHint" title="Sıradaki en iyi hamle"><i>?</i><span>İpucu</span></button>
+      <button class="boost ghost" id="bRestart" title="Seviyeyi baştan başlat"><i>⟳</i><span>Baştan</span></button>
+    </div>
+
+    <div id="rays" class="rays" aria-hidden="true"></div>
+    <div id="sheet" class="sheet" hidden></div>
+    <div id="modal" class="modal" hidden></div>
+    <div id="toast" class="toast" role="status"></div>
+  </div>
+
+  <script src="generator.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
