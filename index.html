@@ -26,10 +26,12 @@
           <strong id="colTitle">Gotik Katedraller ▾</strong>
         </div>
       </button>
-      <div class="goal" title="3 yıldız hedefi (en az döküm sayısı)">
-        <span>★★★</span><b id="goalN">5</b>
-      </div>
-      <div class="pours" id="pours"><b id="poursN">5</b><span>DÖKÜM</span></div>
+      <button class="streak-pill" id="btnStreak" title="Kazanma Serisi: 3+ seride her seviyeye +1 ekstra döküm hakkıyla başlarsın!">
+        <span>🔥</span><b id="streakN">0</b>
+      </button>
+      <button class="coin-pill" id="btnShop" aria-label="Atölye Mağazası" title="Atölye Mağazası ve Kumbara">
+        <span class="coin-ico">🪙</span><b id="coinsN">600</b><span class="coin-plus">+</span>
+      </button>
     </header>
 
     <div class="piece-bar">
@@ -39,6 +41,11 @@
         <span id="lvlMeta">Yuvarlak kemer · 5 bölme</span>
       </div>
       <button class="nav-btn" id="btnNext" aria-label="Sonraki vitray" title="Sonraki vitray">›</button>
+      <button class="nav-btn" id="bRestart" aria-label="Baştan başlat" title="Seviyeyi baştan başlat">⟳</button>
+      <div class="goal" title="3 yıldız hedefi (en az döküm sayısı)">
+        <span>★★★</span><b id="goalN">5</b>
+      </div>
+      <div class="pours" id="pours"><b id="poursN">5</b><span>DÖKÜM</span></div>
     </div>
 
     <div id="tip" class="tip" hidden></div>
@@ -51,19 +58,21 @@
 
     <div class="boosters">
       <button class="boost" id="bCool" title="Bir sonraki döküm taşmaz"><i>❄</i><span>Soğut</span><em id="cCool">2</em></button>
+      <button class="boost" id="bSolder" title="Açık bir kurşun hattını lehimleyip kapat"><i>🔗</i><span>Lehim</span><em id="cSolder">2</em></button>
       <button class="boost" id="bPlus" title="+2 döküm hakkı"><i>+2</i><span>Döküm</span><em id="cPlus">1</em></button>
       <button class="boost" id="bUndo" title="Son dökümü geri al"><i>↶</i><span>Geri al</span><em id="cUndo">3</em></button>
-      <button class="boost ghost" id="bHint" title="Sıradaki en iyi hamle"><i>?</i><span>İpucu</span></button>
-      <button class="boost ghost" id="bRestart" title="Seviyeyi baştan başlat"><i>⟳</i><span>Baştan</span></button>
+      <button class="boost" id="bHint" title="Sıradaki en iyi 3★ hamle"><i>?</i><span>İpucu</span><em id="cHint">3</em></button>
     </div>
 
     <div id="rays" class="rays" aria-hidden="true"></div>
     <div id="sheet" class="sheet" hidden></div>
     <div id="modal" class="modal" hidden></div>
+    <div id="adModal" class="modal ad-modal" hidden></div>
     <div id="toast" class="toast" role="status"></div>
   </div>
 
   <script src="generator.js"></script>
+  <script src="economy.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

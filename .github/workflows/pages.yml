@@ -26,7 +26,7 @@ jobs:
       - name: Web paketini hazırla
         run: |
           mkdir -p _site
-          cp index.html style.css generator.js game.js icon.svg manifest.webmanifest _site/
+          cp index.html style.css generator.js economy.js game.js icon.svg manifest.webmanifest _site/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

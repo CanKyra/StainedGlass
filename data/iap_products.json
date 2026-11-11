@@ -1,0 +1,18 @@
+[
+  {"id": "c1", "product": "com.cankyra.stainedglass.coins1000", "type": "CONSUMABLE", "usd": "1.99",
+   "en": ["1,000 Coins", "A small pouch of coins."], "tr": ["1.000 Altın", "Küçük bir kese altın."]},
+  {"id": "c2", "product": "com.cankyra.stainedglass.coins2800", "type": "CONSUMABLE", "usd": "4.99",
+   "en": ["2,800 Coins", "A bag of coins. 40% more."], "tr": ["2.800 Altın", "Bir torba altın. %40 daha fazla."]},
+  {"id": "c3", "product": "com.cankyra.stainedglass.coins6000", "type": "CONSUMABLE", "usd": "9.99",
+   "en": ["6,000 Coins", "An atelier chest of coins."], "tr": ["6.000 Altın", "Atölye sandığı dolusu altın."]},
+  {"id": "c4", "product": "com.cankyra.stainedglass.coins13000", "type": "CONSUMABLE", "usd": "19.99",
+   "en": ["13,000 Coins", "A cathedral treasury of coins."], "tr": ["13.000 Altın", "Katedral hazinesi dolusu altın."]},
+  {"id": "bundle", "product": "com.cankyra.stainedglass.atelierpack", "type": "CONSUMABLE", "usd": "4.99",
+   "en": ["Master Atelier Pack", "2,000 coins + 3 of each booster."], "tr": ["Usta Atölye Paketi", "2.000 altın + her güçlendiriciden 3 adet."]},
+  {"id": "starter", "product": "com.cankyra.stainedglass.starterpack", "type": "CONSUMABLE", "usd": "1.99",
+   "en": ["Starter Pack", "1,500 coins, 2 of each booster and no ads."], "tr": ["Başlangıç Paketi", "1.500 altın, her güçlendiriciden 2 adet ve reklamsız."]},
+  {"id": "piggy", "product": "com.cankyra.stainedglass.piggybank", "type": "CONSUMABLE", "usd": "2.99",
+   "en": ["Vitray Piggy Bank", "Break it to collect the saved coins."], "tr": ["Vitray Kumbarası", "Kır ve vitraylarda biriken altınları topla."]},
+  {"id": "noads", "product": "com.cankyra.stainedglass.noads", "type": "NON_CONSUMABLE", "usd": "4.99", "try": "169.99",
+   "en": ["No Ads", "Removes interstitial ads + 1,000 coins."], "tr": ["Reklamsız", "Geçiş reklamları kalkar + 1.000 altın."]}
+]

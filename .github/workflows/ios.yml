@@ -36,7 +36,7 @@ jobs:
         run: |
           which xcodegen >/dev/null 2>&1 || brew install xcodegen
           mkdir -p ios/Web
-          cp index.html style.css generator.js game.js icon.svg manifest.webmanifest ios/Web/
+          cp index.html style.css generator.js economy.js game.js icon.svg manifest.webmanifest ios/Web/
           sed -i '' "s/CURRENT_PROJECT_VERSION: .*/CURRENT_PROJECT_VERSION: \"${GITHUB_RUN_NUMBER}\"/" ios/project.yml
           (cd ios && xcodegen generate)
 

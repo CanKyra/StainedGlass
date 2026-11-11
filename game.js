@@ -1,7 +1,8 @@
-/* Stained Glass - playable prototype UI (fast non-blocking multi-tap + collections) */
+/* Stained Glass - Playable Prototype UI (Multi-Tap + Collections + Economy/Monetization) */
 (() => {
   'use strict';
   const G = window.SG;
+  const EMod = window.SGEcon;
   const NS = 'http://www.w3.org/2000/svg';
 
   const COLORS = {
@@ -31,35 +32,49 @@
   const TIPS = {
     1: 'Potadan renk seçili! Aynı renk ipucunu taşıyan bölmelere peş peşe (veya aynı anda iki parmakla) dokun.',
     2: 'Altın oklu açıklıklardan cam <b>aşağıdaki</b> bölmeye akar. Üstten dökerek birkaç bölmeyi tek dökümde doldur.',
-    3: 'Cam farklı renkli bölmeye de akar! Önce alttakini doldur: <b>dolu bölme akışı keser.</b>',
-    4: 'Döküm hakkın sınırlı. ★★★ için sağ üstteki hedef kadar dökümle bitir.',
-    5: 'Sıkışırsan <b>❄ Soğut</b>: bir sonraki döküm hiç taşmaz, sadece dokunduğun bölmeyi doldurur.',
+    3: 'Cam farklı renkli bölmeye de akar! Önce alttakini doldur (<b>dolu bölme akışı keser</b>) ya da <b>🔗 Lehim</b> ile açıklığı kapat.',
+    4: 'Üst üste 3 vitray kazandığında <b>🔥 Ateş Serisi</b> açılır ve her seviyeye <b>+1 ekstra döküm</b> hakkıyla başlarsın!',
   };
 
   // ---------- persistence ----------
-  const KEY = 'sg_proto_v2';
+  const KEY = 'sg_proto_v3';
   const store = (() => {
     let s = {};
-    try { s = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem('sg_proto_v1') || '{}'); } catch (e) { /* ignore */ }
+    try {
+      s = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem('sg_proto_v2') || localStorage.getItem('sg_proto_v1') || '{}');
+    } catch (e) { /* ignore */ }
     return {
       unlocked: s.unlocked || 1,
       stars: s.stars || {},
       thumbs: s.thumbs || {},
       best: s.best || {},
+      econ: s.econ || null,
       settings: Object.assign({ cb: false, sound: true, preview: true }, s.settings || {}),
     };
   })();
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } };
+  const save = () => {
+    try {
+      store.econ = econ.toJSON();
+      localStorage.setItem(KEY, JSON.stringify(store));
+    } catch (e) { /* ignore */ }
+  };
+  const econ = new EMod.Economy(store.econ, () => {
+    try {
+      store.econ = econ.toJSON();
+      localStorage.setItem(KEY, JSON.stringify(store));
+    } catch (e) { /* ignore */ }
+  });
 
   // ---------- helpers ----------
   const $ = s => document.querySelector(s);
   const E = {
     app: $('#app'), board: $('#board'), pots: $('#pots'), pours: $('#pours'), poursN: $('#poursN'), goalN: $('#goalN'),
     colDot: $('#colDot'), colEyebrow: $('#colEyebrow'), colTitle: $('#colTitle'),
+    btnStreak: $('#btnStreak'), streakN: $('#streakN'), btnShop: $('#btnShop'), coinsN: $('#coinsN'),
     lvlName: $('#lvlName'), lvlMeta: $('#lvlMeta'), btnPrev: $('#btnPrev'), btnNext: $('#btnNext'),
-    tip: $('#tip'), sheet: $('#sheet'), modal: $('#modal'), toast: $('#toast'), rays: $('#rays'),
-    bCool: $('#bCool'), bPlus: $('#bPlus'), bUndo: $('#bUndo'), bHint: $('#bHint'), bRestart: $('#bRestart'),
-    cCool: $('#cCool'), cPlus: $('#cPlus'), cUndo: $('#cUndo'),
+    tip: $('#tip'), sheet: $('#sheet'), modal: $('#modal'), adModal: $('#adModal'), toast: $('#toast'), rays: $('#rays'),
+    bCool: $('#bCool'), bSolder: $('#bSolder'), bPlus: $('#bPlus'), bUndo: $('#bUndo'), bHint: $('#bHint'), bRestart: $('#bRestart'),
+    cCool: $('#cCool'), cSolder: $('#cSolder'), cPlus: $('#cPlus'), cUndo: $('#cUndo'), cHint: $('#cHint'),
   };
   function el(tag, attrs, parent) {
     const e = document.createElementNS(NS, tag);
@@ -74,7 +89,7 @@
   let toastT = 0;
   function toast(msg) {
     E.toast.textContent = msg; E.toast.classList.add('show');
-    clearTimeout(toastT); toastT = setTimeout(() => E.toast.classList.remove('show'), 1800);
+    clearTimeout(toastT); toastT = setTimeout(() => E.toast.classList.remove('show'), 1900);
   }
   const vibrate = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* ignore */ } };
 
@@ -103,6 +118,16 @@
     },
     click() { if (this.ok()) this.tone(720, this.ctx.currentTime, 0.055, 'triangle', 0.05); },
     pour() { if (this.ok()) this.noise(0.28, 1250, 0.25); },
+    solder() {
+      if (!this.ok()) return; const t = this.ctx.currentTime;
+      this.noise(0.18, 2400, 0.22);
+      this.tone(980, t, 0.16, 'triangle', 0.08);
+      this.tone(1420, t + 0.04, 0.22, 'sine', 0.07);
+    },
+    coin() {
+      if (!this.ok()) return; const t = this.ctx.currentTime;
+      [1046.5, 1318.5, 1567.98].forEach((f, i) => this.tone(f, t + i * 0.055, 0.35, 'sine', 0.08));
+    },
     chime(d) {
       if (!this.ok()) return;
       const sc = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5], f = sc[Math.min(d, 7)], t = this.ctx.currentTime;
@@ -153,7 +178,7 @@
     return levelCache.get(idx);
   }
   let L = null, S = null;
-  const R = { cells: [], preview: null, fx: null };
+  const R = { cells: [], preview: null, fx: null, solderG: null };
   const anims = []; let rafOn = false;
   let evalTimers = [];
 
@@ -162,29 +187,37 @@
     evalTimers = [];
   }
 
+  function activeDown() {
+    return L.down.map((arr, u) => arr.filter(d => !S.soldered.has(u + '>' + d)));
+  }
+
   function startLevel(idx) {
     idx = Math.max(1, Math.min(MAX_LEVEL, idx));
     clearEvalTimers();
     L = getLevel(idx);
+    const bonusPours = econ.extraStartPours();
     S = {
       idx,
       fill: Array(L.cells.length).fill(null),
-      pours: L.limit,
+      pours: L.limit + bonusPours,
+      bonusPours,
       used: 0,
       selected: null,
       history: [],
-      boosters: { cool: 2, plus: 1, undo: 3 },
+      soldered: new Set(),
       cooling: false,
+      soldering: false,
+      continues: 0,
       status: 'play',
       hover: -1,
       hintRing: null,
       chimePitch: 0,
+      lastLeakedGap: null,
     };
     anims.length = 0;
     document.documentElement.style.setProperty('--accent', L.collection.accent);
     buildBoard();
     buildPots();
-    // Always pre-select the first pot so the player can start pouring immediately
     selectPot(L.palette[0], true);
     updateHUD();
     updateBoosters();
@@ -199,7 +232,7 @@
   function buildBoard() {
     const svg = E.board;
     svg.innerHTML = '';
-    svg.classList.remove('lit', 'cooling', 'shake');
+    svg.classList.remove('lit', 'cooling', 'soldering', 'shake');
     svg.classList.toggle('cb', store.settings.cb);
     const defs = el('defs', null, svg);
     el('polygon', { points: P(L.shape) }, el('clipPath', { id: 'winClip' }, defs));
@@ -253,6 +286,7 @@
     });
     el('path', { d, class: 'lead-o' }, lg);
     el('path', { d, class: 'lead-i' }, lg);
+    R.solderG = el('g', { id: 'solders' }, lg);
     el('polygon', { points: P(L.shape), class: 'lead-border-o' }, lg);
     el('polygon', { points: P(L.shape), class: 'lead-border-i' }, lg);
     L.edges.forEach(e => {
@@ -276,16 +310,32 @@
   }
 
   function updateGaps() {
-    L.edges.forEach(e => { if (e.marker) e.marker.classList.toggle('sealed', S.fill[e.d] != null || S.fill[e.u] != null); });
+    R.solderG.innerHTML = '';
+    const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    const seg = (a, b) => `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+    let sd = '';
+    L.edges.forEach(e => {
+      if (!e.open || !e.marker) return;
+      const key = e.u + '>' + e.d;
+      const isSoldered = S.soldered.has(key);
+      e.marker.classList.toggle('soldered', isSoldered);
+      e.marker.classList.toggle('sealed', !isSoldered && (S.fill[e.d] != null || S.fill[e.u] != null));
+      if (isSoldered) sd += seg(lerp(e.a, e.b, 0.26), lerp(e.a, e.b, 0.74));
+    });
+    if (sd) {
+      el('path', { d: sd, class: 'solder-bar-o' }, R.solderG);
+      el('path', { d: sd, class: 'solder-bar-i' }, R.solderG);
+    }
   }
 
   function floodInfo(i, pt) {
     const res = [{ c: i, d: 0, from: pt || L.cells[i].c, via: null }];
     if (S.cooling) return res;
     const seen = new Set([i]);
+    const down = activeDown();
     for (let q = 0; q < res.length; q++) {
       const f = res[q];
-      for (const j of L.down[f.c]) {
+      for (const j of down[f.c]) {
         if (seen.has(j) || S.fill[j] != null) continue;
         seen.add(j);
         const e = L.gap[f.c + '>' + j];
@@ -300,7 +350,7 @@
     S.hover = i;
     R.preview.innerHTML = '';
     L.edges.forEach(e => e.marker && e.marker.classList.remove('pv-flow'));
-    if (i < 0 || !S.selected || S.status !== 'play' || S.fill[i] != null) return;
+    if (i < 0 || !S.selected || S.soldering || S.status !== 'play' || S.fill[i] != null) return;
     const fl = store.settings.preview ? floodInfo(i) : [{ c: i }];
     fl.forEach(f => {
       el('polygon', { points: P(L.cells[f.c].poly), class: 'pv' + (S.cooling ? ' single' : ''), fill: COLORS[S.selected].hex }, R.preview);
@@ -325,17 +375,18 @@
     return [q.x, q.y];
   }
 
-  // Pour immediately on pointerdown so simultaneous 2-finger taps and rapid taps work with 0ms delay!
   E.board.addEventListener('pointerdown', ev => {
     if (ev.button && ev.button !== 0) return;
     Snd.init();
     if (ev.target.hasPointerCapture && ev.target.hasPointerCapture(ev.pointerId)) {
       ev.target.releasePointerCapture(ev.pointerId);
     }
-    const i = cellAt(ev);
-    if (i >= 0) {
-      tapCell(i, svgPoint(ev));
+    const pt = svgPoint(ev);
+    if (S.soldering && pt) {
+      if (trySolderAt(pt)) return;
     }
+    const i = cellAt(ev);
+    if (i >= 0) tapCell(i, pt);
   });
   E.board.addEventListener('pointermove', ev => {
     if (ev.pointerType === 'mouse') setHover(cellAt(ev));
@@ -344,9 +395,33 @@
     if (ev.pointerType === 'mouse') setHover(-1);
   });
 
+  function trySolderAt(pt) {
+    let best = null, bestD = 48;
+    L.edges.forEach(e => {
+      if (!e.open) return;
+      const key = e.u + '>' + e.d;
+      if (S.soldered.has(key)) return;
+      if (S.fill[e.d] != null || S.fill[e.u] != null) return;
+      const d = Math.hypot(e.mid[0] - pt[0], e.mid[1] - pt[1]);
+      if (d < bestD) { bestD = d; best = key; }
+    });
+    if (!best) {
+      toast('Kapatmak istediğin altın oklu açıklığa dokun');
+      return true;
+    }
+    S.history.push(snapshot());
+    S.soldered.add(best);
+    S.soldering = false;
+    E.board.classList.remove('soldering');
+    Snd.solder(); vibrate(15);
+    updateGaps(); updateBoosters(); refreshHover();
+    toast('🔗 Açıklık lehimlendi ve kapatıldı');
+    return true;
+  }
+
   function tapCell(i, pt) {
     if (S.status !== 'play') return;
-    if (S.fill[i] != null) return; // silently ignore if already filled during rapid multi-tap
+    if (S.fill[i] != null) return;
     if (!S.selected) {
       toast('Önce aşağıdan bir pota seç');
       E.pots.classList.remove('nudge'); void E.pots.offsetWidth; E.pots.classList.add('nudge');
@@ -357,7 +432,15 @@
   }
 
   // ---------- Non-blocking pouring & concurrent animations ----------
-  function snapshot() { return { fill: S.fill.slice(), pours: S.pours, used: S.used, cooling: S.cooling }; }
+  function snapshot() {
+    return {
+      fill: S.fill.slice(),
+      pours: S.pours,
+      used: S.used,
+      cooling: S.cooling,
+      soldered: Array.from(S.soldered),
+    };
+  }
 
   function pour(i, pt) {
     S.history.push(snapshot());
@@ -394,7 +477,6 @@
     rc.molten.setAttribute('cy', origin[1].toFixed(1));
     rc.molten.setAttribute('r', 0);
     rc.molten.setAttribute('fill', mix(COLORS[color].hex, HOT, 1));
-    // Remove any existing animation for the same cell
     for (let k = anims.length - 1; k >= 0; k--) {
       if (anims[k].f.c === f.c) anims.splice(k, 1);
     }
@@ -458,16 +540,18 @@
   }
 
   function evaluateAfterPour(fl, maxEnd) {
-    const wrong = fl.filter(f => S.fill[f.c] !== L.target[f.c]).map(f => f.c);
-    if (wrong.length) {
+    const wrongEntries = fl.filter(f => S.fill[f.c] !== L.target[f.c]);
+    if (wrongEntries.length) {
       S.status = 'wrong';
+      const firstVia = wrongEntries.find(f => f.via);
+      S.lastLeakedGap = firstVia && firstVia.via ? (firstVia.via.u + '>' + firstVia.via.d) : null;
       updateBoosters();
       const t = setTimeout(() => {
-        markWrong(wrong);
+        markWrong(wrongEntries.map(f => f.c));
         Snd.wrong(); vibrate([30, 40, 30]);
         E.board.classList.remove('shake'); void E.board.getBoundingClientRect(); E.board.classList.add('shake');
         showSheet('wrong');
-      }, Math.min(maxEnd, 220));
+      }, Math.min(maxEnd, 210));
       evalTimers.push(t);
       return;
     }
@@ -534,22 +618,91 @@
     E.colDot.style.boxShadow = `0 0 10px ${col.accent}`;
     E.colEyebrow.textContent = `KOLEKSİYON ${col.num} · ${st.done}/12 TAMAMLANDI`;
     E.colTitle.textContent = `${col.title} ▾`;
+    E.streakN.textContent = econ.d.streak || 0;
+    E.btnStreak.classList.toggle('hot', (econ.d.streak || 0) >= 1);
+    E.coinsN.textContent = econ.d.coins.toLocaleString('tr-TR');
     E.lvlName.textContent = `${L.itemIdx + 1}. ${L.pieceName}`;
-    E.lvlMeta.textContent = `${SHAPE_NAMES[L.shapeType] || 'Vitray'} · ${L.cells.length} bölme`;
+    E.lvlMeta.textContent = `${SHAPE_NAMES[L.shapeType] || 'Vitray'} · ${L.cells.length} bölme` + (S.bonusPours ? ' · 🔥+1 Döküm' : '');
     E.poursN.textContent = S.pours;
     E.goalN.textContent = L.min;
     E.pours.classList.toggle('low', S.pours <= 2);
+    E.pours.classList.toggle('bonus', S.bonusPours > 0 && S.pours > 2);
     E.btnPrev.disabled = S.idx <= 1;
     E.btnNext.disabled = S.idx >= MAX_LEVEL;
   }
+
+  function setBadge(elEm, k) {
+    const cnt = econ.d.inv[k] || 0;
+    if (cnt > 0) {
+      elEm.textContent = cnt;
+      elEm.classList.remove('price');
+    } else {
+      elEm.textContent = '🪙' + EMod.CONFIG.prices[k];
+      elEm.classList.add('price');
+    }
+  }
+
   function updateBoosters() {
-    const b = S.boosters;
-    E.cCool.textContent = b.cool; E.cPlus.textContent = b.plus; E.cUndo.textContent = b.undo;
-    E.bCool.disabled = (b.cool <= 0 && !S.cooling) || S.status !== 'play';
+    setBadge(E.cCool, 'cool');
+    setBadge(E.cSolder, 'solder');
+    setBadge(E.cPlus, 'plus');
+    setBadge(E.cUndo, 'undo');
+    setBadge(E.cHint, 'hint');
     E.bCool.classList.toggle('active', S.cooling);
-    E.bPlus.disabled = b.plus <= 0 || S.status === 'win' || S.status === 'wrong';
-    E.bUndo.disabled = b.undo <= 0 || !S.history.length || S.status === 'win';
+    E.bSolder.classList.toggle('active', S.soldering);
+    E.bCool.disabled = S.status !== 'play';
+    E.bSolder.disabled = S.status !== 'play';
+    E.bPlus.disabled = S.status === 'win' || S.status === 'wrong';
+    E.bUndo.disabled = !S.history.length || S.status === 'win';
     E.bHint.disabled = S.status === 'win';
+  }
+
+  function ensureBoosterOrPrompt(k, onReady) {
+    if (econ.hasBooster(k)) {
+      econ.useBooster(k);
+      updateBoosters();
+      onReady();
+      return;
+    }
+    showBoosterBuySheet(k, onReady);
+  }
+
+  function showBoosterBuySheet(k, onReady) {
+    const b = EMod.BOOSTERS[k];
+    const canAfford = econ.d.coins >= b.price;
+    E.sheet.innerHTML = `
+      <h2>${b.icon} ${b.name} Güçlendiricisi</h2>
+      <p>${b.desc}. Stokta kalmadı — altınla alabilir ya da reklam izleyerek 1 adet ücretsiz kazanabilirsin.</p>
+      <div class="row">
+        <button class="btn primary" data-a="buy">${canAfford ? `🪙 ${b.price} Al & Kullan` : `🪙 ${b.price} (Mağaza)`}</button>
+        <button class="btn ad" data-a="ad">🎬 Reklam (+1)</button>
+        <button class="btn" data-a="close" style="flex:0 0 46px">✕</button>
+      </div>`;
+    E.sheet.hidden = false;
+    E.sheet.querySelector('[data-a=close]').onclick = () => hideSheet();
+    E.sheet.querySelector('[data-a=buy]').onclick = () => {
+      if (!econ.buyBoosterWithCoins(k)) {
+        hideSheet();
+        openShop();
+        toast('Altın yetersiz — mağazadan altın alabilirsin');
+        return;
+      }
+      econ.useBooster(k);
+      hideSheet();
+      updateHUD();
+      updateBoosters();
+      onReady();
+    };
+    E.sheet.querySelector('[data-a=ad]').onclick = () => {
+      hideSheet();
+      playAd('Ödüllü Reklam · +1 ' + b.name, () => {
+        econ.addBooster(k, 1);
+        econ.useBooster(k);
+        updateHUD();
+        updateBoosters();
+        onReady();
+      });
+    };
   }
 
   E.btnPrev.addEventListener('click', () => { if (S.idx > 1) { Snd.init(); Snd.click(); startLevel(S.idx - 1); } });
@@ -560,41 +713,120 @@
       startLevel(S.idx + 1);
     }
   });
+  E.btnStreak.addEventListener('click', () => {
+    Snd.init(); Snd.click();
+    const s = econ.d.streak || 0;
+    toast(s >= 3
+      ? `🔥 ${s} Kazanma Serisi aktif! Her seviyeye +1 ekstra dökümle başlıyorsun.`
+      : `🔥 Kazanma Serisi: ${s}/3. Üst üste 3 vitray tamamlayınca +1 ekstra döküm açılır!`);
+  });
+  E.btnShop.addEventListener('click', () => { Snd.init(); Snd.click(); openShop(); });
+
   E.bCool.addEventListener('click', () => {
     if (S.status !== 'play') return;
-    if (S.cooling) { S.cooling = false; S.boosters.cool++; }
-    else if (S.boosters.cool > 0) { S.cooling = true; S.boosters.cool--; toast('❄ Sıradaki döküm taşmayacak'); }
-    E.board.classList.toggle('cooling', S.cooling);
-    updateBoosters(); refreshHover(); Snd.click();
+    Snd.init();
+    if (S.cooling) {
+      S.cooling = false;
+      econ.addBooster('cool', 1);
+      E.board.classList.remove('cooling');
+      updateBoosters(); refreshHover(); Snd.click();
+      return;
+    }
+    ensureBoosterOrPrompt('cool', () => {
+      S.cooling = true;
+      S.soldering = false;
+      E.board.classList.add('cooling');
+      E.board.classList.remove('soldering');
+      updateBoosters(); refreshHover(); Snd.click();
+      toast('❄ Sıradaki döküm taşmayacak');
+    });
   });
+
+  E.bSolder.addEventListener('click', () => {
+    if (S.status !== 'play') return;
+    Snd.init();
+    if (S.soldering) {
+      S.soldering = false;
+      econ.addBooster('solder', 1);
+      E.board.classList.remove('soldering');
+      updateBoosters(); Snd.click();
+      return;
+    }
+    const openAvailable = L.edges.some(e => e.open && !S.soldered.has(e.u + '>' + e.d) && S.fill[e.d] == null && S.fill[e.u] == null);
+    if (!openAvailable) {
+      toast('Kapatılabilecek açık kurşun hattı yok');
+      return;
+    }
+    ensureBoosterOrPrompt('solder', () => {
+      S.soldering = true;
+      S.cooling = false;
+      E.board.classList.add('soldering');
+      E.board.classList.remove('cooling');
+      updateBoosters(); refreshHover(); Snd.click();
+      toast('🔗 Kapatmak istediğin altın açıklığa dokun');
+    });
+  });
+
   E.bPlus.addEventListener('click', () => {
-    if (S.boosters.plus <= 0) return;
-    clearEvalTimers();
-    S.boosters.plus--; S.pours += 2;
-    if (S.status === 'out') { S.status = 'play'; hideSheet(); }
-    updateHUD(); updateBoosters(); toast('+2 döküm eklendi'); Snd.click();
+    if (S.status === 'win' || S.status === 'wrong') return;
+    Snd.init();
+    ensureBoosterOrPrompt('plus', () => {
+      clearEvalTimers();
+      S.pours += 2;
+      if (S.status === 'out') { S.status = 'play'; hideSheet(); }
+      updateHUD(); updateBoosters(); toast('+2 döküm eklendi'); Snd.click();
+    });
   });
-  E.bUndo.addEventListener('click', undo);
-  E.bHint.addEventListener('click', hint);
-  E.bRestart.addEventListener('click', () => startLevel(S.idx));
+
+  E.bUndo.addEventListener('click', () => {
+    if (!S.history.length || S.status === 'win') return;
+    Snd.init();
+    ensureBoosterOrPrompt('undo', () => undoStep(false));
+  });
+
+  E.bHint.addEventListener('click', () => {
+    if (S.status === 'win') return;
+    Snd.init();
+    if (S.status === 'wrong') { toast('Önce geri al ya da onar'); return; }
+    ensureBoosterOrPrompt('hint', () => applyHint());
+  });
+
+  E.bRestart.addEventListener('click', () => {
+    Snd.init(); Snd.click();
+    if (S.used > 0 && econ.d.streak > 0) econ.onLevelFailReset();
+    startLevel(S.idx);
+  });
   E.tip.addEventListener('click', () => { E.tip.hidden = true; });
 
-  function undo() {
-    if (S.boosters.undo <= 0 || !S.history.length || S.status === 'win') return;
+  function undoStep(autoSolderLeak) {
+    if (!S.history.length) return;
     clearEvalTimers();
+    const leakGap = S.lastLeakedGap;
     const s = S.history.pop();
-    S.fill = s.fill; S.pours = s.pours; S.used = s.used; S.cooling = s.cooling;
+    S.fill = s.fill;
+    S.pours = s.pours;
+    S.used = s.used;
+    S.cooling = s.cooling;
+    S.soldered = new Set(s.soldered || []);
+    if (autoSolderLeak && leakGap) {
+      S.soldered.add(leakGap);
+      Snd.solder();
+    } else {
+      Snd.click();
+    }
     E.board.classList.toggle('cooling', S.cooling);
-    S.boosters.undo--; S.status = 'play';
-    hideSheet(); renderStatic(); updateHUD(); updateBoosters(); refreshHover(); Snd.click();
+    S.status = 'play';
+    hideSheet();
+    renderStatic();
+    updateHUD();
+    updateBoosters();
+    refreshHover();
   }
 
   function clearHintRing() { if (S.hintRing) { S.hintRing.remove(); S.hintRing = null; } }
-  function hint() {
-    if (S.status === 'win') return;
-    if (S.status === 'wrong') { toast('Önce geri al ya da baştan başla'); return; }
+  function applyHint() {
     let mask = 0; S.fill.forEach((v, i) => { if (v != null) mask |= 1 << i; });
-    const r = G.solveFrom(L.cells.length, L.down, L.target, mask);
+    const r = G.solveFrom(L.cells.length, activeDown(), L.target, mask);
     if (!r) { toast('Bu durumdan çözüm yok, geri al'); return; }
     if (r.min > S.pours) toast(`Kalan hakla yetişmez: ${r.min} döküm gerekli`);
     const c = r.first;
@@ -604,20 +836,121 @@
     S.hintRing = el('circle', { cx: cc[0], cy: cc[1], r: 22, class: 'hint-target' }, R.fx);
   }
 
-  // ---------- sheets / modals ----------
+  // ---------- Simulated Ad Overlay ----------
+  function playAd(title, onComplete) {
+    let rem = 3;
+    E.adModal.innerHTML = `<div class="ad-card">
+      <div class="eyebrow">SPONSORLU VİDEO</div>
+      <h2 style="margin-top:4px">${title}</h2>
+      <div class="ad-timer" id="adTimer">3s</div>
+      <div class="ad-bar"><div id="adBarFill" style="width:0%"></div></div>
+      <p class="sub">Ödül hazırlanıyor…</p>
+    </div>`;
+    E.adModal.hidden = false;
+    const timerEl = $('#adTimer'), barEl = $('#adBarFill');
+    setTimeout(() => { if (barEl) barEl.style.width = '100%'; }, 30);
+    const iv = setInterval(() => {
+      rem--;
+      if (rem > 0) {
+        if (timerEl) timerEl.textContent = rem + 's';
+      } else {
+        clearInterval(iv);
+        E.adModal.hidden = true;
+        E.adModal.innerHTML = '';
+        if (onComplete) onComplete();
+      }
+    }, 850);
+  }
+
+  // ---------- Pinch-Point Sheets (wrong / out) ----------
   function showSheet(kind) {
-    let h = '';
+    const streak = econ.d.streak || 0;
+    const streakBanner = streak > 0
+      ? `<div class="streak-warn"><span>🔥</span><span><b>${streak} Kazanma Serin</b> tehlikede! Devam edersen serin korunur.</span></div>`
+      : '';
+
     if (kind === 'wrong') {
-      h = `<h2>Cam yanlış bölmeye taştı</h2><p>Farklı renkli bölmeye akan cam çatladı. Son dökümü geri alabilir ya da baştan başlayabilirsin.</p>
-        <div class="row"><button class="btn primary" data-a="undo" ${S.boosters.undo > 0 ? '' : 'disabled'}>↶ Geri al (${S.boosters.undo})</button><button class="btn" data-a="restart">⟳ Baştan</button></div>`;
+      const hasUndo = econ.hasBooster('undo');
+      const repPrice = EMod.CONFIG.repairPrice;
+      const primaryLabel = hasUndo
+        ? `↶ Geri Al (${econ.d.inv.undo})`
+        : `🔧 Onar & Lehimle (🪙 ${repPrice})`;
+      E.sheet.innerHTML = `
+        <h2>Cam yanlış bölmeye taştı</h2>
+        <p>Farklı renkli bölmeye akan cam çatladı. Hatayı onarıp taşan açıklığı lehimleyebilirsin.</p>
+        ${streakBanner}
+        <div class="row">
+          <button class="btn primary" data-a="repair">${primaryLabel}</button>
+          <button class="btn ad" data-a="ad_repair">🎬 Ücretsiz Onar</button>
+          <button class="btn" data-a="restart" style="flex:0 0 82px">⟳ Baştan</button>
+        </div>`;
     } else if (kind === 'out') {
-      h = `<h2>Döküm hakkın bitti</h2><p>${S.fill.filter(v => v == null).length} bölme boş kaldı. İpucu: üstteki bölmelerden dökersen cam aşağı akar.</p>
-        <div class="row"><button class="btn primary" data-a="plus" ${S.boosters.plus > 0 ? '' : 'disabled'}>+2 Döküm (${S.boosters.plus})</button><button class="btn" data-a="undo" ${S.boosters.undo > 0 ? '' : 'disabled'}>↶ Geri al</button><button class="btn" data-a="restart">⟳ Baştan</button></div>`;
+      const contPrice = econ.continuePrice(S.continues);
+      const emptyCnt = S.fill.filter(v => v == null).length;
+      E.sheet.innerHTML = `
+        <h2>Döküm hakkın bitti</h2>
+        <p>${emptyCnt} bölme boş kaldı! Devam paketiyle <b>+2 Döküm + 1 Soğutucu</b> alıp vitrayı tamamla.</p>
+        ${streakBanner}
+        <div class="row">
+          <button class="btn primary" data-a="cont">+2 Döküm + ❄ (🪙 ${contPrice})</button>
+          <button class="btn ad" data-a="ad_cont">🎬 +1 Döküm</button>
+          <button class="btn" data-a="restart" style="flex:0 0 82px">⟳ Baştan</button>
+        </div>`;
     }
-    E.sheet.innerHTML = h; E.sheet.hidden = false; updateBoosters();
+    E.sheet.hidden = false;
+    updateBoosters();
+
     E.sheet.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
       const a = b.dataset.a;
-      if (a === 'undo') undo(); else if (a === 'restart') startLevel(S.idx); else if (a === 'plus') E.bPlus.click();
+      Snd.init();
+      if (a === 'repair') {
+        if (econ.hasBooster('undo')) {
+          econ.useBooster('undo');
+          undoStep(false);
+        } else if (econ.spend(EMod.CONFIG.repairPrice, 'repair_and_solder')) {
+          S.pours++; // refund the wasted pour on paid repair!
+          undoStep(true);
+          toast('🔧 Çatlak onarıldı ve açıklık lehimlendi!');
+        } else {
+          openShop();
+          toast('Altın yetersiz — mağazadan altın alabilirsin');
+        }
+      } else if (a === 'ad_repair') {
+        playAd('Cam Onarımı & Lehim', () => {
+          undoStep(true);
+          toast('🔧 Çatlak onarıldı ve açıklık lehimlendi!');
+        });
+      } else if (a === 'cont') {
+        const price = econ.continuePrice(S.continues);
+        if (econ.spend(price, 'continue_pours')) {
+          S.continues++;
+          clearEvalTimers();
+          S.pours += 2;
+          econ.addBooster('cool', 1);
+          S.status = 'play';
+          hideSheet();
+          updateHUD();
+          updateBoosters();
+          Snd.coin();
+          toast('+2 Döküm ve +1 ❄ Soğut eklendi!');
+        } else {
+          openShop();
+          toast('Altın yetersiz — mağazadan altın alabilirsin');
+        }
+      } else if (a === 'ad_cont') {
+        playAd('Son Şans · +1 Döküm', () => {
+          clearEvalTimers();
+          S.pours += 1;
+          S.status = 'play';
+          hideSheet();
+          updateHUD();
+          updateBoosters();
+          toast('+1 Döküm eklendi!');
+        });
+      } else if (a === 'restart') {
+        econ.onLevelFailReset();
+        startLevel(S.idx);
+      }
     }));
   }
   function hideSheet() { E.sheet.hidden = true; E.sheet.innerHTML = ''; }
@@ -639,13 +972,33 @@
   function win() {
     S.status = 'win';
     const stars = S.used <= L.min ? 3 : S.used <= L.min + 1 ? 2 : 1;
+    const isFirstWin = !store.thumbs[S.idx];
     store.stars[S.idx] = Math.max(store.stars[S.idx] || 0, stars);
     store.best[S.idx] = Math.min(store.best[S.idx] || 99, S.used);
     store.unlocked = Math.max(store.unlocked, S.idx + 1);
     store.thumbs[S.idx] = thumbSVG(L);
+
+    const winInfo = econ.onLevelWin({ stars, isFirstWin });
+
+    // Check collection completion bonus
+    const st = colStats(L.colIdx);
+    let colChestBonus = 0;
+    if (st.done === 12 && !econ.d.claimedCols[L.colIdx]) {
+      econ.d.claimedCols[L.colIdx] = true;
+      colChestBonus = EMod.CONFIG.colCompleteCoins;
+      econ.earn(colChestBonus, 'collection_complete_' + L.colIdx);
+      econ.addBooster('cool', 1);
+      econ.addBooster('solder', 1);
+    }
+    if (st.stars === 36 && !econ.d.claimedMasterCols[L.colIdx]) {
+      econ.d.claimedMasterCols[L.colIdx] = true;
+      colChestBonus += EMod.CONFIG.colMasterCoins;
+      econ.earn(EMod.CONFIG.colMasterCoins, 'collection_master_' + L.colIdx);
+    }
     save();
     updateHUD();
     updateBoosters();
+
     E.board.classList.add('lit');
     el('rect', { x: -320, y: 0, width: 260, height: 540, fill: 'url(#sweepG)', class: 'sweep', transform: 'skewX(-18)' }, R.fx);
     for (let k = 0; k < 14; k++) {
@@ -655,7 +1008,7 @@
     }
     castRays();
     Snd.win(); vibrate([18, 45, 18, 45]);
-    const t = setTimeout(() => showWin(stars), 680);
+    const t = setTimeout(() => showWin(stars, winInfo, colChestBonus), 680);
     evalTimers.push(t);
   }
 
@@ -685,38 +1038,183 @@
     }
   }
 
-  function showWin(stars) {
+  function showWin(stars, winInfo, colChestBonus) {
     if (S.status !== 'win') return;
+    winInfo = winInfo || { totalEarned: 25, streak: econ.d.streak || 1, streakBonus: 5, piggyAdded: 60, piggyTotal: econ.d.piggy };
     const col = L.collection;
     const st = colStats(L.colIdx);
     const pct = Math.round((st.done / 12) * 100);
     const isLastInCol = L.itemIdx === 11;
     const nextIdx = Math.min(MAX_LEVEL, S.idx + 1);
-    const nextLabel = isLastInCol && S.idx < MAX_LEVEL ? 'Sonraki Koleksiyon ▶' : 'Sonraki Vitray ▶';
+    const nextLabel = isLastInCol && S.idx < MAX_LEVEL ? 'Sonraki Koleksiyon ▶' : 'Sonraki ▶';
 
     E.modal.innerHTML = `<div class="card win">
       <div class="eyebrow">Koleksiyon ${col.num} · ${col.title}</div>
       <h2>${L.itemIdx + 1}. ${L.pieceName}</h2>
       <div class="thumb">${thumbSVG(L)}</div>
       <div class="stars">${[1, 2, 3].map(k => k <= stars ? `<span class="on" style="animation-delay:${0.1 * k}s">★</span>` : '★').join('')}</div>
-      <div class="stat">${S.used} döküm · 3★ hedefi ${L.min}</div>
+      <div class="stat">${S.used} döküm · 3★ hedefi ${L.min} · 🔥 ${winInfo.streak} Seri</div>
+      <div class="reward-box">
+        <div>
+          <b id="winCoinTxt">+${winInfo.totalEarned} 🪙 Kazanıldı</b>
+          <small>🏺 Kumbara +${winInfo.piggyAdded} (${winInfo.piggyTotal}/3.000)</small>
+        </div>
+        <button class="btn ad" id="btnDoubleCoin" style="flex:0 0 auto;padding:8px 11px;font-size:12.5px">🎬 2x (+${winInfo.totalEarned} 🪙)</button>
+      </div>
+      ${colChestBonus ? `<div class="streak-warn" style="background:rgba(70,212,134,.15);border-color:rgba(70,212,134,.5);color:#9ef7c2">🏆 <b>Koleksiyon Hazinesi Açıldı: +${colChestBonus} 🪙 + Booster!</b></div>` : ''}
       <div class="col-prog">
         <div class="col-prog-top">
-          <span>${col.title} Koleksiyonu</span>
-          <span style="color:${col.accent}">${st.done} / 12 Vitray</span>
+          <span>${col.title}</span>
+          <span style="color:${col.accent}">${st.done} / 12 Vitray · ★${st.stars}/36</span>
         </div>
         <div class="col-prog-bar"><div class="col-prog-fill" style="width:${pct}%;background:${col.accent}"></div></div>
       </div>
       <div class="row">
-        <button class="btn" data-a="album">Koleksiyonlar</button>
-        <button class="btn" data-a="replay" title="Tekrar oyna" style="flex:0 0 48px">⟳</button>
+        <button class="btn" data-a="album">Koleksiyon</button>
+        <button class="btn" data-a="shop">🪙 Mağaza</button>
         <button class="btn primary" data-a="next">${nextLabel}</button>
       </div>
     </div>`;
     E.modal.hidden = false;
-    E.modal.querySelector('[data-a=next]').onclick = () => startLevel(nextIdx);
-    E.modal.querySelector('[data-a=replay]').onclick = () => startLevel(S.idx);
+
+    const dblBtn = $('#btnDoubleCoin');
+    if (dblBtn) {
+      dblBtn.onclick = () => {
+        dblBtn.disabled = true;
+        playAd('2x Altın Ödülü', () => {
+          econ.earn(winInfo.totalEarned, 'win_double_ad');
+          Snd.coin();
+          updateHUD();
+          const txt = $('#winCoinTxt');
+          if (txt) txt.textContent = `+${winInfo.totalEarned * 2} 🪙 Kazanıldı (2x!)`;
+          dblBtn.textContent = '✓ 2x Alındı';
+        });
+      };
+    }
+    const advanceNext = () => {
+      if (econ.shouldShowInterstitial(S.idx)) {
+        playAd('Geçiş Reklamı', () => startLevel(nextIdx));
+      } else {
+        startLevel(nextIdx);
+      }
+    };
+    E.modal.querySelector('[data-a=next]').onclick = advanceNext;
     E.modal.querySelector('[data-a=album]').onclick = () => openMenu(L.colIdx);
+    E.modal.querySelector('[data-a=shop]').onclick = () => openShop();
+  }
+
+  // ---------- Atelier Shop Modal ----------
+  function openShop() {
+    const piggyPct = Math.round((econ.d.piggy / EMod.CONFIG.piggyCap) * 100);
+    const canBreakPiggy = econ.d.piggy >= EMod.CONFIG.piggyMinBreak;
+
+    const specialPacks = EMod.IAP_PRODUCTS.filter(p => !p.id.startsWith('c')).map(p => {
+      if (p.once && econ.d.starterBought) return '';
+      if (p.id === 'noads' && econ.d.noAds) return '';
+      if (p.isPiggy) {
+        return `<div class="pack-card featured">
+          <div class="pack-info">
+            <span class="pack-tag">🏺 BİRİKEN HAZİNE · ${econ.d.piggy} / 3.000 🪙</span>
+            <strong>${p.name}</strong>
+            <small>${canBreakPiggy ? `Şu an kırıp <b>${econ.d.piggy.toLocaleString('tr-TR')} 🪙</b> alabilirsin!` : `Kırmak için en az ${EMod.CONFIG.piggyMinBreak} 🪙 birikmeli`}</small>
+            <div class="col-prog-bar" style="margin-top:6px"><div class="col-prog-fill" style="width:${piggyPct}%"></div></div>
+          </div>
+          <button class="buy-btn" data-iap="piggy" ${canBreakPiggy ? '' : 'disabled'}>${p.tryPrice}</button>
+        </div>`;
+      }
+      return `<div class="pack-card ${p.once ? 'featured' : ''}">
+        <div class="pack-info">
+          ${p.tag ? `<span class="pack-tag">${p.tag}</span>` : ''}
+          <strong>${p.name}</strong>
+          <small>${p.desc}</small>
+        </div>
+        <button class="buy-btn" data-iap="${p.id}">${p.tryPrice}</button>
+      </div>`;
+    }).join('');
+
+    const coinPacks = EMod.IAP_PRODUCTS.filter(p => p.id.startsWith('c')).map(p => `
+      <div class="coin-card ${p.hot ? 'hot' : ''}">
+        <div>
+          ${p.tag ? `<span class="pack-tag">${p.tag}</span>` : ''}
+          <strong style="display:block;font:800 15px var(--f-display);color:var(--gold)">🪙 ${p.coins.toLocaleString('tr-TR')}</strong>
+          <small style="color:var(--muted);font-size:11.5px">${p.desc}</small>
+        </div>
+        <button class="buy-btn" data-iap="${p.id}" style="width:100%">${p.tryPrice}</button>
+      </div>`).join('');
+
+    const boosterRows = Object.values(EMod.BOOSTERS).map(b => `
+      <div class="pack-card" style="padding:8px 11px">
+        <div class="pack-info">
+          <strong style="font-size:13px">${b.icon} ${b.name} <span style="color:var(--muted);font-weight:600">(Stok: ${econ.d.inv[b.id] || 0})</span></strong>
+          <small>${b.desc}</small>
+        </div>
+        <button class="buy-btn coin-buy" data-b="${b.id}">🪙 ${b.price}</button>
+      </div>`).join('');
+
+    E.modal.innerHTML = `<div class="card">
+      <div class="row" style="align-items:center">
+        <div style="flex:1">
+          <div class="eyebrow">Atölye Mağazası · Bakiye: 🪙 ${econ.d.coins.toLocaleString('tr-TR')}</div>
+          <h2>Mağaza & Hazine</h2>
+        </div>
+        <button class="icon-btn" data-a="close" aria-label="Kapat">✕</button>
+      </div>
+
+      <h3>Özel Paketler & Kumbara</h3>
+      <div class="shop-list">${specialPacks}</div>
+
+      <h3>Altın Keseleri</h3>
+      <div class="pack-card" style="margin-bottom:8px;border-color:rgba(70,212,134,.45)">
+        <div class="pack-info">
+          <strong style="color:#7ef2b0">🎬 Ücretsiz Altın</strong>
+          <small>Kısa bir reklam izle ve anında +${EMod.CONFIG.rewardedCoins} 🪙 kazan</small>
+        </div>
+        <button class="buy-btn" id="btnFreeCoins" style="background:#46D486;color:#0e291b">+${EMod.CONFIG.rewardedCoins} 🪙</button>
+      </div>
+      <div class="coin-grid">${coinPacks}</div>
+
+      <h3>Tekli Güçlendiriciler (Altınla)</h3>
+      <div class="shop-list">${boosterRows}</div>
+    </div>`;
+    E.modal.hidden = false;
+
+    E.modal.querySelector('[data-a=close]').onclick = () => {
+      if (S && S.status === 'win') showWin(store.stars[S.idx] || 1); else closeModal();
+    };
+    const freeBtn = $('#btnFreeCoins');
+    if (freeBtn) {
+      freeBtn.onclick = () => {
+        playAd('Ücretsiz Altın Ödülü', () => {
+          econ.earn(EMod.CONFIG.rewardedCoins, 'shop_rewarded_ad');
+          Snd.coin();
+          updateHUD();
+          openShop();
+          toast(`+${EMod.CONFIG.rewardedCoins} 🪙 eklendi!`);
+        });
+      };
+    }
+    E.modal.querySelectorAll('[data-iap]').forEach(btn => btn.onclick = () => {
+      const id = btn.dataset.iap;
+      const res = econ.purchaseIAP(id);
+      if (!res) return;
+      Snd.coin();
+      updateHUD();
+      updateBoosters();
+      openShop();
+      toast(`✓ ${res.pack.name} satın alındı!` + (res.coinsAdded ? ` (+${res.coinsAdded} 🪙)` : ''));
+    });
+    E.modal.querySelectorAll('[data-b]').forEach(btn => btn.onclick = () => {
+      const k = btn.dataset.b;
+      if (!econ.buyBoosterWithCoins(k)) {
+        toast('Altın yetersiz — yukarıdan altın paketi seçebilirsin');
+        return;
+      }
+      Snd.coin();
+      updateHUD();
+      updateBoosters();
+      openShop();
+      toast(`+1 ${EMod.BOOSTERS[k].name} envantere eklendi!`);
+    });
   }
 
   // ---------- Collection Hub + Album Modal ----------
@@ -766,15 +1264,16 @@
     E.modal.innerHTML = `<div class="card">
       <div class="row" style="align-items:center">
         <div style="flex:1">
-          <div class="eyebrow">Vitray Koleksiyonları</div>
+          <div class="eyebrow">Vitray Koleksiyonları · 12/12 Ödülü: +500 🪙</div>
           <h2>Koleksiyon Seçimi</h2>
         </div>
+        <button class="icon-btn" data-a="shop" title="Mağaza" style="margin-right:4px">🪙</button>
         <button class="icon-btn" data-a="close" aria-label="Kapat">✕</button>
       </div>
       <div class="col-grid">${colCards}</div>
 
       <div class="row" style="align-items:baseline;justify-content:space-between;margin-top:14px">
-        <h3 style="margin:0;color:${activeCol.accent}">${activeCol.num}. ${activeCol.title} (${activeSt.done}/12)</h3>
+        <h3 style="margin:0;color:${activeCol.accent}">${activeCol.num}. ${activeCol.title} (${activeSt.done}/12 · ★${activeSt.stars}/36)</h3>
         <small style="color:var(--muted);font-size:11.5px">${activeCol.subtitle}</small>
       </div>
       <div class="album" style="margin-top:8px">${slots}</div>
@@ -790,6 +1289,7 @@
     E.modal.querySelector('[data-a=close]').onclick = () => {
       if (S && S.status === 'win') showWin(store.stars[S.idx] || 1); else closeModal();
     };
+    E.modal.querySelector('[data-a=shop]').onclick = () => openShop();
     E.modal.querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
       Snd.click();
       openMenu(+b.dataset.c);
@@ -801,8 +1301,9 @@
       startLevel(lv);
     });
     E.modal.querySelector('[data-a=reset]').onclick = () => {
-      if (!confirm('Tüm koleksiyon ilerlemesi silinsin mi?')) return;
-      store.unlocked = 1; store.stars = {}; store.thumbs = {}; store.best = {}; save(); startLevel(1);
+      if (!confirm('Tüm koleksiyon ve altın ilerlemesi silinsin mi?')) return;
+      localStorage.removeItem(KEY);
+      location.reload();
     };
     E.modal.querySelectorAll('[data-t]').forEach(t => t.onclick = () => {
       const k = t.dataset.t; store.settings[k] = !store.settings[k]; save();
@@ -828,9 +1329,9 @@
     }
     const n = parseInt(ev.key, 10);
     if (n >= 1 && n <= L.palette.length) selectPot(L.palette[n - 1]);
-    else if (ev.key === 'z' || ev.key === 'Z') undo();
+    else if (ev.key === 'z' || ev.key === 'Z') E.bUndo.click();
     else if (ev.key === 'r' || ev.key === 'R') startLevel(S.idx);
-    else if (ev.key === 'h' || ev.key === 'H') hint();
+    else if (ev.key === 'h' || ev.key === 'H') E.bHint.click();
     else if (ev.key === 'ArrowLeft' && S.idx > 1) startLevel(S.idx - 1);
     else if (ev.key === 'ArrowRight' && S.idx < MAX_LEVEL) startLevel(S.idx + 1);
   });
@@ -842,6 +1343,7 @@
   if (!(startIdx >= 1)) startIdx = Math.min(MAX_LEVEL, Math.max(1, store.unlocked));
   startLevel(startIdx);
   if (qs.get('collections') === '1') openMenu(L.colIdx);
+  if (qs.get('shop') === '1') openShop();
 
   // ?demo=1 -> auto-plays the optimal solution
   if (qs.get('demo') === '1') {
@@ -852,7 +1354,7 @@
       }
       if (S.status === 'play') {
         let mask = 0; S.fill.forEach((v, i) => { if (v != null) mask |= 1 << i; });
-        const r = G.solveFrom(L.cells.length, L.down, L.target, mask);
+        const r = G.solveFrom(L.cells.length, activeDown(), L.target, mask);
         if (r) { selectPot(L.target[r.first], true); pour(r.first, L.cells[r.first].c); }
       }
       setTimeout(step, 550);
