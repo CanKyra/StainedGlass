@@ -437,7 +437,49 @@
     throw new Error('Level generation failed for ' + idx);
   }
 
-  const api = { buildLevel, solveFrom, inside, centroid, params, COLLECTIONS, PALETTE, W, H };
+  const ALL_SHAPES = [
+    'round', 'gothic', 'rose', 'pointed_arch', 'hex_medallion', 'domed_mihrab',
+    'oval_medallion', 'tiffany_dome', 'triptych_arch', 'crystal_diamond', 'tall_lancet', 'octagon_star',
+  ];
+
+  function buildDailyLevel(dayNum) {
+    const d = Math.max(1, dayNum | 0);
+    const colIdx = d % COLLECTIONS.length;
+    const col = COLLECTIONS[colIdx];
+    const shape = ALL_SHAPES[d % ALL_SHAPES.length];
+    let P = {
+      n: 10 + (d % 4),
+      c: 3 + (d % 2),
+      open: 0.68,
+      slack: 1,
+      minSave: 3,
+      traps: 2,
+      bias: 0.45,
+      shape,
+      pool: col.colors,
+    };
+    for (let step = 0; step < 5; step++) {
+      for (let a = 0; a < 300; a++) {
+        const lvl = generate(P, hash(d * 104729 + 97, a + step * 1000));
+        if (lvl) {
+          lvl.idx = 0;
+          lvl.isDaily = true;
+          lvl.dayNum = d;
+          lvl.colIdx = colIdx;
+          lvl.itemIdx = d % 12;
+          lvl.collection = col;
+          lvl.pieceName = 'Günün Vitrayı #' + ((d - 20750 > 0) ? (d - 20750) : (d % 365 + 1));
+          lvl.limit = lvl.min + P.slack;
+          lvl.params = P;
+          return lvl;
+        }
+      }
+      P = Object.assign({}, P, { minSave: Math.max(0, P.minSave - 1), traps: Math.max(0, P.traps - 1) });
+    }
+    return buildLevel((d % 48) + 1);
+  }
+
+  const api = { buildLevel, buildDailyLevel, solveFrom, inside, centroid, params, COLLECTIONS, PALETTE, W, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SG = api;
 })(typeof window !== 'undefined' ? window : globalThis);

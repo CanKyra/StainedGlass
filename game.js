@@ -1,4 +1,4 @@
-/* Stained Glass - Playable Prototype UI (Multi-Tap + Collections + Economy/Monetization) */
+/* Stained Glass - Complete UI (Home Screen, Collection Gallery, Daily Rewards & Puzzle, Economy & Multi-Tap Gameplay) */
 (() => {
   'use strict';
   const G = window.SG;
@@ -65,17 +65,86 @@
     } catch (e) { /* ignore */ }
   });
 
-  // ---------- helpers ----------
+  // ---------- DOM helpers ----------
   const $ = s => document.querySelector(s);
   const E = {
-    app: $('#app'), board: $('#board'), pots: $('#pots'), pours: $('#pours'), poursN: $('#poursN'), goalN: $('#goalN'),
-    colDot: $('#colDot'), colEyebrow: $('#colEyebrow'), colTitle: $('#colTitle'),
-    btnStreak: $('#btnStreak'), streakN: $('#streakN'), btnShop: $('#btnShop'), coinsN: $('#coinsN'),
-    lvlName: $('#lvlName'), lvlMeta: $('#lvlMeta'), btnPrev: $('#btnPrev'), btnNext: $('#btnNext'),
-    tip: $('#tip'), sheet: $('#sheet'), modal: $('#modal'), adModal: $('#adModal'), toast: $('#toast'), rays: $('#rays'),
-    bCool: $('#bCool'), bSolder: $('#bSolder'), bPlus: $('#bPlus'), bUndo: $('#bUndo'), bHint: $('#bHint'), bRestart: $('#bRestart'),
-    cCool: $('#cCool'), cSolder: $('#cSolder'), cPlus: $('#cPlus'), cUndo: $('#cUndo'), cHint: $('#cHint'),
+    app: $('#app'),
+    homeScreen: $('#homeScreen'),
+    colScreen: $('#colScreen'),
+    gameScreen: $('#gameScreen'),
+    btnHome: $('#btnHome'),
+    btnStars: $('#btnStars'),
+    starsTotalN: $('#starsTotalN'),
+    starBadge: $('#starBadge'),
+    btnMenu: $('#btnMenu'),
+    hudSpacer: $('#hudSpacer'),
+    colDot: $('#colDot'),
+    colEyebrow: $('#colEyebrow'),
+    colTitle: $('#colTitle'),
+    btnStreak: $('#btnStreak'),
+    streakN: $('#streakN'),
+    btnShop: $('#btnShop'),
+    coinsN: $('#coinsN'),
+    btnSettings: $('#btnSettings'),
+    // Home elements
+    homeColCard: $('#homeColCard'),
+    homeColThumb: $('#homeColThumb'),
+    homeColTag: $('#homeColTag'),
+    homeColStat: $('#homeColStat'),
+    homeColName: $('#homeColName'),
+    homeColNext: $('#homeColNext'),
+    homeColFill: $('#homeColFill'),
+    homeStreakStrip: $('#homeStreakStrip'),
+    homeStreakTxt: $('#homeStreakTxt'),
+    btnHomePlay: $('#btnHomePlay'),
+    homePlayMain: $('#homePlayMain'),
+    homePlaySub: $('#homePlaySub'),
+    btnDailyReward: $('#btnDailyReward'),
+    badgeDailyReward: $('#badgeDailyReward'),
+    btnDailyPuzzle: $('#btnDailyPuzzle'),
+    badgeDailyPuzzle: $('#badgeDailyPuzzle'),
+    lblDailyPuzzle: $('#lblDailyPuzzle'),
+    btnHomeGallery: $('#btnHomeGallery'),
+    badgeGallery: $('#badgeGallery'),
+    btnHomePiggy: $('#btnHomePiggy'),
+    badgePiggy: $('#badgePiggy'),
+    lblHomePiggy: $('#lblHomePiggy'),
+    // Collection Gallery elements
+    starRoadCard: $('#starRoadCard'),
+    colScreenGrid: $('#colScreenGrid'),
+    colActiveHeader: $('#colActiveHeader'),
+    colScreenAlbum: $('#colScreenAlbum'),
+    btnColPlay: $('#btnColPlay'),
+    colPlayMain: $('#colPlayMain'),
+    // Gameplay elements
+    board: $('#board'),
+    pots: $('#pots'),
+    pours: $('#pours'),
+    poursN: $('#poursN'),
+    goalN: $('#goalN'),
+    lvlName: $('#lvlName'),
+    lvlMeta: $('#lvlMeta'),
+    btnPrev: $('#btnPrev'),
+    btnNext: $('#btnNext'),
+    tip: $('#tip'),
+    sheet: $('#sheet'),
+    modal: $('#modal'),
+    adModal: $('#adModal'),
+    toast: $('#toast'),
+    rays: $('#rays'),
+    bCool: $('#bCool'),
+    bSolder: $('#bSolder'),
+    bPlus: $('#bPlus'),
+    bUndo: $('#bUndo'),
+    bHint: $('#bHint'),
+    bRestart: $('#bRestart'),
+    cCool: $('#cCool'),
+    cSolder: $('#cSolder'),
+    cPlus: $('#cPlus'),
+    cUndo: $('#cUndo'),
+    cHint: $('#cHint'),
   };
+
   function el(tag, attrs, parent) {
     const e = document.createElementNS(NS, tag);
     if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
@@ -89,7 +158,7 @@
   let toastT = 0;
   function toast(msg) {
     E.toast.textContent = msg; E.toast.classList.add('show');
-    clearTimeout(toastT); toastT = setTimeout(() => E.toast.classList.remove('show'), 1900);
+    clearTimeout(toastT); toastT = setTimeout(() => E.toast.classList.remove('show'), 2100);
   }
   const vibrate = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* ignore */ } };
 
@@ -167,16 +236,21 @@
 
   // ---------- state ----------
   const MAX_LEVEL = G.COLLECTIONS.length * 12;
+  const MAX_STARS = MAX_LEVEL * 3;
   const levelCache = new Map();
+  let currentScreen = 'home';
+  let activeGalleryCol = 0;
+
   function getLevel(idx) {
     if (!levelCache.has(idx)) {
-      const L = G.buildLevel(idx);
-      L.gap = {};
-      L.edges.forEach(e => { if (e.open) L.gap[e.u + '>' + e.d] = e; });
-      levelCache.set(idx, L);
+      const lvl = G.buildLevel(idx);
+      lvl.gap = {};
+      lvl.edges.forEach(e => { if (e.open) lvl.gap[e.u + '>' + e.d] = e; });
+      levelCache.set(idx, lvl);
     }
     return levelCache.get(idx);
   }
+
   let L = null, S = null;
   const R = { cells: [], preview: null, fx: null, solderG: null };
   const anims = []; let rafOn = false;
@@ -191,15 +265,275 @@
     return L.down.map((arr, u) => arr.filter(d => !S.soldered.has(u + '>' + d)));
   }
 
+  function totalStars() {
+    let t = 0;
+    for (const k in store.stars) t += (store.stars[k] || 0);
+    return t;
+  }
+
+  function colStats(colIdx) {
+    const start = colIdx * 12 + 1;
+    let done = 0, stars = 0;
+    for (let i = start; i < start + 12; i++) {
+      if (store.thumbs[i]) done++;
+      stars += (store.stars[i] || 0);
+    }
+    return { done, stars, total: 12 };
+  }
+
+  function thumbSVG(lvl) {
+    return `<svg viewBox="-24 -10 448 560" aria-hidden="true"><polygon points="${P(lvl.shape)}" fill="#120f1c" stroke="#463f62" stroke-width="28" stroke-linejoin="round"/>` +
+      lvl.cells.map((c, i) => `<polygon points="${P(c.poly)}" fill="${COLORS[lvl.target[i]].hex}" stroke="#0b0910" stroke-width="7" stroke-linejoin="round"/>`).join('') +
+      `<polygon points="${P(lvl.shape)}" fill="none" stroke="#0b0910" stroke-width="10" stroke-linejoin="round"/></svg>`;
+  }
+
+  function silhouetteSVG(lvl) {
+    return `<svg viewBox="-24 -10 448 560" aria-hidden="true"><polygon points="${P(lvl.shape)}" fill="#1f1933" stroke="#3a3357" stroke-width="26" stroke-linejoin="round"/>` +
+      lvl.cells.map(c => `<polygon points="${P(c.poly)}" fill="#261f3d" stroke="#120f1c" stroke-width="7" stroke-linejoin="round"/>`).join('') +
+      `<polygon points="${P(lvl.shape)}" fill="none" stroke="#120f1c" stroke-width="10" stroke-linejoin="round"/></svg>`;
+  }
+
+  // ---------- Screen Navigation ----------
+  function setScreen(scr) {
+    currentScreen = scr;
+    E.homeScreen.hidden = scr !== 'home';
+    E.colScreen.hidden = scr !== 'collections';
+    E.gameScreen.hidden = scr !== 'game';
+
+    const inGame = scr === 'game';
+    E.btnHome.hidden = scr === 'home';
+    E.btnHome.classList.toggle('icon-only', inGame);
+    E.btnStars.hidden = inGame;
+    E.btnMenu.hidden = !inGame;
+    E.hudSpacer.hidden = inGame;
+
+    if (!inGame) {
+      clearEvalTimers();
+      E.rays.innerHTML = '';
+      hideSheet();
+    }
+    updateTopBar();
+  }
+
+  function updateTopBar() {
+    const tot = totalStars();
+    const claimableChests = econ.claimableStarChests(tot);
+    E.starsTotalN.textContent = `${tot}/${MAX_STARS}`;
+    E.starBadge.hidden = claimableChests.length === 0;
+    E.streakN.textContent = econ.d.streak || 0;
+    E.btnStreak.classList.toggle('hot', (econ.d.streak || 0) >= 1);
+    E.coinsN.textContent = econ.d.coins.toLocaleString('tr-TR');
+  }
+
+  function goHome() {
+    closeModal();
+    setScreen('home');
+    refreshHome();
+    try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ }
+  }
+
+  function refreshHome() {
+    updateTopBar();
+    const curIdx = Math.min(MAX_LEVEL, Math.max(1, store.unlocked));
+    const curLvl = getLevel(curIdx);
+    const col = curLvl.collection;
+    const st = colStats(curLvl.colIdx);
+    const pct = Math.round((st.done / 12) * 100);
+
+    document.documentElement.style.setProperty('--accent', col.accent);
+    E.homeColThumb.innerHTML = store.thumbs[curIdx] || silhouetteSVG(curLvl);
+    E.homeColTag.textContent = `KOLEKSİYON ${col.num} · ${st.done}/12 TAMAMLANDI`;
+    E.homeColTag.style.color = col.accent;
+    E.homeColStat.textContent = `★ ${st.stars}/36`;
+    E.homeColName.textContent = col.title;
+    E.homeColNext.textContent = `Sıradaki: ${curLvl.itemIdx + 1}. ${curLvl.pieceName} · ${SHAPE_NAMES[curLvl.shapeType] || 'Vitray'}`;
+    E.homeColFill.style.width = pct + '%';
+    E.homeColFill.style.background = col.accent;
+
+    const streak = econ.d.streak || 0;
+    E.homeStreakStrip.classList.toggle('hot', streak >= 3);
+    E.homeStreakTxt.textContent = streak >= 3
+      ? `${streak} Kazanma Serisi Aktif · Her bölüme +1 ekstra dökümle başlıyorsun!`
+      : `Usta Ateşi Serisi: ${streak}/3 · 3 seride +1 ekstra döküm hakkı bedava!`;
+
+    E.homePlayMain.textContent = `▶ OYNA · SEVİYE ${curIdx}`;
+    E.homePlaySub.textContent = `${curLvl.pieceName} · ${col.title}`;
+
+    // Dock badges
+    const today = EMod.localToday();
+    E.badgeDailyReward.hidden = !econ.canClaimDaily(today);
+    const puzzleDone = econ.isDailyPuzzleDone(today);
+    E.badgeDailyPuzzle.hidden = puzzleDone;
+    E.lblDailyPuzzle.textContent = puzzleDone ? 'Günün Vitrayı ✓' : 'Günün Vitrayı';
+
+    const tot = totalStars();
+    E.badgeGallery.hidden = econ.claimableStarChests(tot).length === 0;
+
+    const piggyReady = econ.d.piggy >= EMod.CONFIG.piggyMinBreak;
+    E.badgePiggy.hidden = !piggyReady;
+    E.lblHomePiggy.textContent = `Kumbara (${econ.d.piggy})`;
+  }
+
+  // ---------- Collection Gallery Screen ----------
+  function goCollections(colIdx) {
+    closeModal();
+    if (typeof colIdx !== 'number') {
+      const curIdx = Math.min(MAX_LEVEL, Math.max(1, store.unlocked));
+      colIdx = Math.min(G.COLLECTIONS.length - 1, Math.floor((curIdx - 1) / 12));
+    }
+    activeGalleryCol = colIdx;
+    setScreen('collections');
+    renderCollectionScreen();
+    try { history.replaceState(null, '', '?collections=1'); } catch (e) { /* ignore */ }
+  }
+
+  function renderCollectionScreen() {
+    updateTopBar();
+    const tot = totalStars();
+    const activeCol = G.COLLECTIONS[activeGalleryCol];
+    document.documentElement.style.setProperty('--accent', activeCol.accent);
+
+    // 1. Star Road & Milestone Chests
+    const chestNodes = EMod.STAR_CHESTS.map(c => {
+      const claimed = !!econ.d.claimedStarChests[c.stars];
+      const ready = !claimed && tot >= c.stars;
+      const cls = claimed ? 'claimed' : (ready ? 'ready' : '');
+      const ico = claimed ? '✓' : (ready ? '🎁' : '🔒');
+      return `<button class="chest-node ${cls}" data-chest="${c.stars}" title="${c.label}: +${c.coins} Altın">
+        <i>${ico}</i>
+        <span>★${c.stars}</span>
+      </button>`;
+    }).join('');
+
+    E.starRoadCard.innerHTML = `
+      <div class="star-road-top">
+        <strong>★ Yıldız Yolu (${tot} / ${MAX_STARS})</strong>
+        <small>Yıldız topla, sandıkları aç!</small>
+      </div>
+      <div class="chest-row">${chestNodes}</div>`;
+
+    E.starRoadCard.querySelectorAll('[data-chest]').forEach(btn => {
+      btn.onclick = () => {
+        const target = +btn.dataset.chest;
+        const chest = econ.claimStarChest(target, tot);
+        if (chest) {
+          Snd.init(); Snd.coin();
+          toast(`🎉 ${chest.label} Açıldı: +${chest.coins} 🪙 ve Güçlendiriciler!`);
+          renderCollectionScreen();
+        } else if (econ.d.claimedStarChests[target]) {
+          toast('Bu yıldız sandığı zaten toplandı');
+        } else {
+          const info = EMod.STAR_CHESTS.find(x => x.stars === target);
+          toast(`🔒 ${info.label} için ${target} yıldız gerekiyor (${tot}/${target}) — Ödül: +${info.coins} 🪙`);
+        }
+      };
+    });
+
+    // 2. Collection Cards
+    E.colScreenGrid.innerHTML = G.COLLECTIONS.map((c, idx) => {
+      const st = colStats(idx);
+      const pct = Math.round((st.done / 12) * 100);
+      return `<button class="col-card ${idx === activeGalleryCol ? 'active' : ''}" data-c="${idx}">
+        <div class="col-card-top">
+          <span class="col-card-tag" style="color:${c.accent}">Koleksiyon ${c.num}</span>
+          <span class="col-card-cnt">${st.done}/12 · ★${st.stars}</span>
+        </div>
+        <strong>${c.title}</strong>
+        <div class="col-card-bar"><span style="width:${pct}%;background:${c.accent}"></span></div>
+      </button>`;
+    }).join('');
+
+    E.colScreenGrid.querySelectorAll('[data-c]').forEach(b => {
+      b.onclick = () => {
+        Snd.init(); Snd.click();
+        activeGalleryCol = +b.dataset.c;
+        renderCollectionScreen();
+      };
+    });
+
+    // 3. Active Collection 12-Piece Showcase
+    const activeSt = colStats(activeGalleryCol);
+    E.colActiveHeader.innerHTML = `
+      <h2 style="color:${activeCol.accent}">${activeCol.num}. ${activeCol.title} (${activeSt.done}/12 · ★${activeSt.stars}/36)</h2>
+      <small>${activeCol.subtitle}</small>`;
+
+    const startIdx = activeGalleryCol * 12 + 1;
+    let nextInCol = startIdx;
+    let slots = '';
+    for (let k = 0; k < 12; k++) {
+      const lvIdx = startIdx + k;
+      if (!store.thumbs[lvIdx] && nextInCol === startIdx && k > 0 && store.thumbs[lvIdx - 1]) {
+        nextInCol = lvIdx;
+      }
+      const isCur = lvIdx === Math.min(MAX_LEVEL, store.unlocked);
+      const curCls = isCur ? ' cur' : '';
+      const pieceName = activeCol.pieces[k];
+      if (store.thumbs[lvIdx]) {
+        const st = store.stars[lvIdx] || 0;
+        slots += `<button class="slot${curCls}" data-l="${lvIdx}" aria-label="${pieceName}">
+          ${store.thumbs[lvIdx]}
+          <span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span>
+          <span class="n">${k + 1}. ${pieceName}</span>
+        </button>`;
+      } else {
+        const lvlObj = getLevel(lvIdx);
+        slots += `<button class="slot todo${curCls}" data-l="${lvIdx}" aria-label="${pieceName}">
+          ${silhouetteSVG(lvlObj)}
+          <span class="s">☆☆☆</span>
+          <span class="n">${k + 1}. ${pieceName}</span>
+        </button>`;
+      }
+    }
+    E.colScreenAlbum.innerHTML = slots;
+    E.colScreenAlbum.querySelectorAll('[data-l]').forEach(b => {
+      b.onclick = () => {
+        const lv = +b.dataset.l;
+        store.unlocked = Math.max(store.unlocked, lv); save();
+        Snd.init(); Snd.click();
+        startLevel(lv);
+      };
+    });
+
+    // Find first unsolved in this collection (or first level of collection if all solved)
+    let targetLv = startIdx;
+    for (let k = 0; k < 12; k++) {
+      if (!store.thumbs[startIdx + k]) { targetLv = startIdx + k; break; }
+    }
+    const targetObj = getLevel(targetLv);
+    E.colPlayMain.textContent = `▶ SEVİYE ${targetLv} · ${targetObj.pieceName.toUpperCase()}`;
+    E.btnColPlay.onclick = () => {
+      Snd.init(); Snd.click();
+      startLevel(targetLv);
+    };
+  }
+
+  // ---------- Start Campaign Level or Daily Puzzle ----------
   function startLevel(idx) {
     idx = Math.max(1, Math.min(MAX_LEVEL, idx));
     clearEvalTimers();
     L = getLevel(idx);
+    initPlaySession(L, false);
+    try { history.replaceState(null, '', '?level=' + idx); } catch (e) { /* ignore */ }
+  }
+
+  function startDailyPuzzle() {
+    clearEvalTimers();
+    const today = EMod.localToday();
+    const dl = G.buildDailyLevel(today);
+    dl.gap = {};
+    dl.edges.forEach(e => { if (e.open) dl.gap[e.u + '>' + e.d] = e; });
+    L = dl;
+    initPlaySession(L, true);
+    try { history.replaceState(null, '', '?puzzle=1'); } catch (e) { /* ignore */ }
+  }
+
+  function initPlaySession(lvl, isDaily) {
     const bonusPours = econ.extraStartPours();
     S = {
-      idx,
-      fill: Array(L.cells.length).fill(null),
-      pours: L.limit + bonusPours,
+      idx: lvl.idx || 0,
+      isDaily: !!isDaily,
+      fill: Array(lvl.cells.length).fill(null),
+      pours: lvl.limit + bonusPours,
       bonusPours,
       used: 0,
       selected: null,
@@ -215,17 +549,17 @@
       lastLeakedGap: null,
     };
     anims.length = 0;
-    document.documentElement.style.setProperty('--accent', L.collection.accent);
+    document.documentElement.style.setProperty('--accent', lvl.collection.accent);
+    setScreen('game');
     buildBoard();
     buildPots();
-    selectPot(L.palette[0], true);
+    selectPot(lvl.palette[0], true);
     updateHUD();
     updateBoosters();
     hideSheet();
     closeModal();
     E.rays.innerHTML = '';
-    if (TIPS[idx]) { E.tip.innerHTML = TIPS[idx]; E.tip.hidden = false; } else E.tip.hidden = true;
-    try { history.replaceState(null, '', '?level=' + idx); } catch (e) { /* file:// may block */ }
+    if (!isDaily && TIPS[S.idx]) { E.tip.innerHTML = TIPS[S.idx]; E.tip.hidden = false; } else E.tip.hidden = true;
   }
 
   // ---------- board ----------
@@ -275,7 +609,6 @@
     el('image', { href: NOISE, x: 0, y: 0, width: 400, height: 540, preserveAspectRatio: 'none', 'clip-path': 'url(#winClip)', class: 'tex' }, svg);
     R.preview = el('g', { id: 'preview' }, svg);
 
-    // lead cames
     const lg = el('g', { id: 'leads' }, svg);
     let d = '';
     const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
@@ -346,7 +679,7 @@
   }
 
   function setHover(i, force) {
-    if (i === S.hover && !force) return;
+    if (!S || (i === S.hover && !force)) return;
     S.hover = i;
     R.preview.innerHTML = '';
     L.edges.forEach(e => e.marker && e.marker.classList.remove('pv-flow'));
@@ -357,7 +690,7 @@
       if (f.via) f.via.marker.classList.add('pv-flow');
     });
   }
-  const refreshHover = () => setHover(S.hover, true);
+  const refreshHover = () => { if (S) setHover(S.hover, true); };
 
   // ---------- Fast, non-blocking, multi-touch input ----------
   function cellAt(ev) {
@@ -376,7 +709,7 @@
   }
 
   E.board.addEventListener('pointerdown', ev => {
-    if (ev.button && ev.button !== 0) return;
+    if (!S || (ev.button && ev.button !== 0)) return;
     Snd.init();
     if (ev.target.hasPointerCapture && ev.target.hasPointerCapture(ev.pointerId)) {
       ev.target.releasePointerCapture(ev.pointerId);
@@ -431,7 +764,6 @@
     pour(i, pt);
   }
 
-  // ---------- Non-blocking pouring & concurrent animations ----------
   function snapshot() {
     return {
       fill: S.fill.slice(),
@@ -599,34 +931,24 @@
     refreshHover();
   }
 
-  // ---------- Collection stats ----------
-  function colStats(colIdx) {
-    const start = colIdx * 12 + 1;
-    let done = 0, stars = 0;
-    for (let i = start; i < start + 12; i++) {
-      if (store.thumbs[i]) done++;
-      stars += (store.stars[i] || 0);
-    }
-    return { done, stars, total: 12 };
-  }
-
   // ---------- HUD & boosters ----------
   function updateHUD() {
+    updateTopBar();
+    if (!L || !S) return;
     const col = L.collection;
     const st = colStats(L.colIdx);
     E.colDot.style.background = col.accent;
     E.colDot.style.boxShadow = `0 0 10px ${col.accent}`;
-    E.colEyebrow.textContent = `KOLEKSİYON ${col.num} · ${st.done}/12 TAMAMLANDI`;
+    E.colEyebrow.textContent = S.isDaily ? 'GÜNLÜK ÖZEL VİTRAY' : `KOLEKSİYON ${col.num} · ${st.done}/12`;
     E.colTitle.textContent = `${col.title} ▾`;
-    E.streakN.textContent = econ.d.streak || 0;
-    E.btnStreak.classList.toggle('hot', (econ.d.streak || 0) >= 1);
-    E.coinsN.textContent = econ.d.coins.toLocaleString('tr-TR');
-    E.lvlName.textContent = `${L.itemIdx + 1}. ${L.pieceName}`;
+    E.lvlName.textContent = S.isDaily ? `📅 ${L.pieceName}` : `${L.itemIdx + 1}. ${L.pieceName}`;
     E.lvlMeta.textContent = `${SHAPE_NAMES[L.shapeType] || 'Vitray'} · ${L.cells.length} bölme` + (S.bonusPours ? ' · 🔥+1 Döküm' : '');
     E.poursN.textContent = S.pours;
     E.goalN.textContent = L.min;
     E.pours.classList.toggle('low', S.pours <= 2);
     E.pours.classList.toggle('bonus', S.bonusPours > 0 && S.pours > 2);
+    E.btnPrev.hidden = S.isDaily;
+    E.btnNext.hidden = S.isDaily;
     E.btnPrev.disabled = S.idx <= 1;
     E.btnNext.disabled = S.idx >= MAX_LEVEL;
   }
@@ -648,6 +970,7 @@
     setBadge(E.cPlus, 'plus');
     setBadge(E.cUndo, 'undo');
     setBadge(E.cHint, 'hint');
+    if (!S) return;
     E.bCool.classList.toggle('active', S.cooling);
     E.bSolder.classList.toggle('active', S.soldering);
     E.bCool.disabled = S.status !== 'play';
@@ -705,14 +1028,12 @@
     };
   }
 
-  E.btnPrev.addEventListener('click', () => { if (S.idx > 1) { Snd.init(); Snd.click(); startLevel(S.idx - 1); } });
-  E.btnNext.addEventListener('click', () => {
-    if (S.idx < MAX_LEVEL) {
-      Snd.init(); Snd.click();
-      store.unlocked = Math.max(store.unlocked, S.idx + 1); save();
-      startLevel(S.idx + 1);
-    }
-  });
+  // ---------- Event Listeners (HUD & Home & Boosters) ----------
+  E.btnHome.addEventListener('click', () => { Snd.init(); Snd.click(); goHome(); });
+  E.btnStars.addEventListener('click', () => { Snd.init(); Snd.click(); goCollections(); });
+  E.btnMenu.addEventListener('click', () => { Snd.init(); Snd.click(); goCollections(L ? L.colIdx : 0); });
+  E.btnSettings.addEventListener('click', () => { Snd.init(); Snd.click(); openSettings(); });
+  E.btnShop.addEventListener('click', () => { Snd.init(); Snd.click(); openShop(); });
   E.btnStreak.addEventListener('click', () => {
     Snd.init(); Snd.click();
     const s = econ.d.streak || 0;
@@ -720,10 +1041,31 @@
       ? `🔥 ${s} Kazanma Serisi aktif! Her seviyeye +1 ekstra dökümle başlıyorsun.`
       : `🔥 Kazanma Serisi: ${s}/3. Üst üste 3 vitray tamamlayınca +1 ekstra döküm açılır!`);
   });
-  E.btnShop.addEventListener('click', () => { Snd.init(); Snd.click(); openShop(); });
+
+  // Home Screen actions
+  E.homeColCard.addEventListener('click', () => { Snd.init(); Snd.click(); goCollections(); });
+  E.btnHomePlay.addEventListener('click', () => {
+    Snd.init(); Snd.click();
+    const curIdx = Math.min(MAX_LEVEL, Math.max(1, store.unlocked));
+    startLevel(curIdx);
+  });
+  E.btnDailyReward.addEventListener('click', () => { Snd.init(); Snd.click(); openDailyReward(); });
+  E.btnDailyPuzzle.addEventListener('click', () => { Snd.init(); Snd.click(); startDailyPuzzle(); });
+  E.btnHomeGallery.addEventListener('click', () => { Snd.init(); Snd.click(); goCollections(); });
+  E.btnHomePiggy.addEventListener('click', () => { Snd.init(); Snd.click(); openShop(); });
+
+  // Gameplay controls
+  E.btnPrev.addEventListener('click', () => { if (S && !S.isDaily && S.idx > 1) { Snd.init(); Snd.click(); startLevel(S.idx - 1); } });
+  E.btnNext.addEventListener('click', () => {
+    if (S && !S.isDaily && S.idx < MAX_LEVEL) {
+      Snd.init(); Snd.click();
+      store.unlocked = Math.max(store.unlocked, S.idx + 1); save();
+      startLevel(S.idx + 1);
+    }
+  });
 
   E.bCool.addEventListener('click', () => {
-    if (S.status !== 'play') return;
+    if (!S || S.status !== 'play') return;
     Snd.init();
     if (S.cooling) {
       S.cooling = false;
@@ -743,7 +1085,7 @@
   });
 
   E.bSolder.addEventListener('click', () => {
-    if (S.status !== 'play') return;
+    if (!S || S.status !== 'play') return;
     Snd.init();
     if (S.soldering) {
       S.soldering = false;
@@ -768,7 +1110,7 @@
   });
 
   E.bPlus.addEventListener('click', () => {
-    if (S.status === 'win' || S.status === 'wrong') return;
+    if (!S || S.status === 'win' || S.status === 'wrong') return;
     Snd.init();
     ensureBoosterOrPrompt('plus', () => {
       clearEvalTimers();
@@ -779,22 +1121,23 @@
   });
 
   E.bUndo.addEventListener('click', () => {
-    if (!S.history.length || S.status === 'win') return;
+    if (!S || !S.history.length || S.status === 'win') return;
     Snd.init();
     ensureBoosterOrPrompt('undo', () => undoStep(false));
   });
 
   E.bHint.addEventListener('click', () => {
-    if (S.status === 'win') return;
+    if (!S || S.status === 'win') return;
     Snd.init();
     if (S.status === 'wrong') { toast('Önce geri al ya da onar'); return; }
     ensureBoosterOrPrompt('hint', () => applyHint());
   });
 
   E.bRestart.addEventListener('click', () => {
+    if (!S) return;
     Snd.init(); Snd.click();
-    if (S.used > 0 && econ.d.streak > 0) econ.onLevelFailReset();
-    startLevel(S.idx);
+    if (!S.isDaily && S.used > 0 && econ.d.streak > 0) econ.onLevelFailReset();
+    if (S.isDaily) startDailyPuzzle(); else startLevel(S.idx);
   });
   E.tip.addEventListener('click', () => { E.tip.hidden = true; });
 
@@ -823,7 +1166,7 @@
     refreshHover();
   }
 
-  function clearHintRing() { if (S.hintRing) { S.hintRing.remove(); S.hintRing = null; } }
+  function clearHintRing() { if (S && S.hintRing) { S.hintRing.remove(); S.hintRing = null; } }
   function applyHint() {
     let mask = 0; S.fill.forEach((v, i) => { if (v != null) mask |= 1 << i; });
     const r = G.solveFrom(L.cells.length, activeDown(), L.target, mask);
@@ -865,7 +1208,7 @@
   // ---------- Pinch-Point Sheets (wrong / out) ----------
   function showSheet(kind) {
     const streak = econ.d.streak || 0;
-    const streakBanner = streak > 0
+    const streakBanner = (!S.isDaily && streak > 0)
       ? `<div class="streak-warn"><span>🔥</span><span><b>${streak} Kazanma Serin</b> tehlikede! Devam edersen serin korunur.</span></div>`
       : '';
 
@@ -908,7 +1251,7 @@
           econ.useBooster('undo');
           undoStep(false);
         } else if (econ.spend(EMod.CONFIG.repairPrice, 'repair_and_solder')) {
-          S.pours++; // refund the wasted pour on paid repair!
+          S.pours++;
           undoStep(true);
           toast('🔧 Çatlak onarıldı ve açıklık lehimlendi!');
         } else {
@@ -948,53 +1291,54 @@
           toast('+1 Döküm eklendi!');
         });
       } else if (a === 'restart') {
-        econ.onLevelFailReset();
-        startLevel(S.idx);
+        if (!S.isDaily) econ.onLevelFailReset();
+        if (S.isDaily) startDailyPuzzle(); else startLevel(S.idx);
       }
     }));
   }
   function hideSheet() { E.sheet.hidden = true; E.sheet.innerHTML = ''; }
   function closeModal() { E.modal.hidden = true; E.modal.innerHTML = ''; }
 
-  function thumbSVG(lvl) {
-    return `<svg viewBox="-24 -10 448 560" aria-hidden="true"><polygon points="${P(lvl.shape)}" fill="#120f1c" stroke="#463f62" stroke-width="28" stroke-linejoin="round"/>` +
-      lvl.cells.map((c, i) => `<polygon points="${P(c.poly)}" fill="${COLORS[lvl.target[i]].hex}" stroke="#0b0910" stroke-width="7" stroke-linejoin="round"/>`).join('') +
-      `<polygon points="${P(lvl.shape)}" fill="none" stroke="#0b0910" stroke-width="10" stroke-linejoin="round"/></svg>`;
-  }
-
-  function silhouetteSVG(lvl) {
-    return `<svg viewBox="-24 -10 448 560" aria-hidden="true"><polygon points="${P(lvl.shape)}" fill="#1f1933" stroke="#3a3357" stroke-width="26" stroke-linejoin="round"/>` +
-      lvl.cells.map(c => `<polygon points="${P(c.poly)}" fill="#261f3d" stroke="#120f1c" stroke-width="7" stroke-linejoin="round"/>`).join('') +
-      `<polygon points="${P(lvl.shape)}" fill="none" stroke="#120f1c" stroke-width="10" stroke-linejoin="round"/></svg>`;
-  }
-
   // ---------- win ----------
   function win() {
     S.status = 'win';
     const stars = S.used <= L.min ? 3 : S.used <= L.min + 1 ? 2 : 1;
-    const isFirstWin = !store.thumbs[S.idx];
-    store.stars[S.idx] = Math.max(store.stars[S.idx] || 0, stars);
-    store.best[S.idx] = Math.min(store.best[S.idx] || 99, S.used);
-    store.unlocked = Math.max(store.unlocked, S.idx + 1);
-    store.thumbs[S.idx] = thumbSVG(L);
-
-    const winInfo = econ.onLevelWin({ stars, isFirstWin });
-
-    // Check collection completion bonus
-    const st = colStats(L.colIdx);
+    let winInfo = null;
     let colChestBonus = 0;
-    if (st.done === 12 && !econ.d.claimedCols[L.colIdx]) {
-      econ.d.claimedCols[L.colIdx] = true;
-      colChestBonus = EMod.CONFIG.colCompleteCoins;
-      econ.earn(colChestBonus, 'collection_complete_' + L.colIdx);
-      econ.addBooster('cool', 1);
-      econ.addBooster('solder', 1);
+
+    if (S.isDaily) {
+      const dRes = econ.onDailyPuzzleWin(EMod.localToday());
+      winInfo = {
+        totalEarned: dRes.coins,
+        streak: dRes.streak,
+        piggyAdded: dRes.piggyAdded,
+        piggyTotal: dRes.piggyTotal,
+        isDaily: true,
+      };
+    } else {
+      const isFirstWin = !store.thumbs[S.idx];
+      store.stars[S.idx] = Math.max(store.stars[S.idx] || 0, stars);
+      store.best[S.idx] = Math.min(store.best[S.idx] || 99, S.used);
+      store.unlocked = Math.max(store.unlocked, S.idx + 1);
+      store.thumbs[S.idx] = thumbSVG(L);
+
+      winInfo = econ.onLevelWin({ stars, isFirstWin });
+
+      const st = colStats(L.colIdx);
+      if (st.done === 12 && !econ.d.claimedCols[L.colIdx]) {
+        econ.d.claimedCols[L.colIdx] = true;
+        colChestBonus = EMod.CONFIG.colCompleteCoins;
+        econ.earn(colChestBonus, 'collection_complete_' + L.colIdx);
+        econ.addBooster('cool', 1);
+        econ.addBooster('solder', 1);
+      }
+      if (st.stars === 36 && !econ.d.claimedMasterCols[L.colIdx]) {
+        econ.d.claimedMasterCols[L.colIdx] = true;
+        colChestBonus += EMod.CONFIG.colMasterCoins;
+        econ.earn(EMod.CONFIG.colMasterCoins, 'collection_master_' + L.colIdx);
+      }
     }
-    if (st.stars === 36 && !econ.d.claimedMasterCols[L.colIdx]) {
-      econ.d.claimedMasterCols[L.colIdx] = true;
-      colChestBonus += EMod.CONFIG.colMasterCoins;
-      econ.earn(EMod.CONFIG.colMasterCoins, 'collection_master_' + L.colIdx);
-    }
+
     save();
     updateHUD();
     updateBoosters();
@@ -1039,21 +1383,21 @@
   }
 
   function showWin(stars, winInfo, colChestBonus) {
-    if (S.status !== 'win') return;
-    winInfo = winInfo || { totalEarned: 25, streak: econ.d.streak || 1, streakBonus: 5, piggyAdded: 60, piggyTotal: econ.d.piggy };
+    if (!S || S.status !== 'win') return;
+    winInfo = winInfo || { totalEarned: 25, streak: econ.d.streak || 1, piggyAdded: 60, piggyTotal: econ.d.piggy };
     const col = L.collection;
     const st = colStats(L.colIdx);
     const pct = Math.round((st.done / 12) * 100);
-    const isLastInCol = L.itemIdx === 11;
-    const nextIdx = Math.min(MAX_LEVEL, S.idx + 1);
-    const nextLabel = isLastInCol && S.idx < MAX_LEVEL ? 'Sonraki Koleksiyon ▶' : 'Sonraki ▶';
+    const isLastInCol = !S.isDaily && L.itemIdx === 11;
+    const nextIdx = S.isDaily ? Math.min(MAX_LEVEL, Math.max(1, store.unlocked)) : Math.min(MAX_LEVEL, S.idx + 1);
+    const nextLabel = S.isDaily ? 'Ana Ekrana Dön' : (isLastInCol && S.idx < MAX_LEVEL ? 'Sonraki Koleksiyon ▶' : 'Sonraki ▶');
 
     E.modal.innerHTML = `<div class="card win">
-      <div class="eyebrow">Koleksiyon ${col.num} · ${col.title}</div>
-      <h2>${L.itemIdx + 1}. ${L.pieceName}</h2>
+      <div class="eyebrow">${S.isDaily ? 'GÜNLÜK ÖZEL BULMACA TAMAMLANDI' : `Koleksiyon ${col.num} · ${col.title}`}</div>
+      <h2>${S.isDaily ? L.pieceName : `${L.itemIdx + 1}. ${L.pieceName}`}</h2>
       <div class="thumb">${thumbSVG(L)}</div>
       <div class="stars">${[1, 2, 3].map(k => k <= stars ? `<span class="on" style="animation-delay:${0.1 * k}s">★</span>` : '★').join('')}</div>
-      <div class="stat">${S.used} döküm · 3★ hedefi ${L.min} · 🔥 ${winInfo.streak} Seri</div>
+      <div class="stat">${S.used} döküm · 3★ hedefi ${L.min} · 🔥 ${winInfo.streak} ${S.isDaily ? 'Günlük Seri' : 'Seri'}</div>
       <div class="reward-box">
         <div>
           <b id="winCoinTxt">+${winInfo.totalEarned} 🪙 Kazanıldı</b>
@@ -1070,8 +1414,8 @@
         <div class="col-prog-bar"><div class="col-prog-fill" style="width:${pct}%;background:${col.accent}"></div></div>
       </div>
       <div class="row">
-        <button class="btn" data-a="album">Koleksiyon</button>
-        <button class="btn" data-a="shop">🪙 Mağaza</button>
+        <button class="btn" data-a="home">⌂ Ana Ekran</button>
+        <button class="btn" data-a="album">🏛 Galeri</button>
         <button class="btn primary" data-a="next">${nextLabel}</button>
       </div>
     </div>`;
@@ -1092,6 +1436,10 @@
       };
     }
     const advanceNext = () => {
+      if (S.isDaily) {
+        goHome();
+        return;
+      }
       if (econ.shouldShowInterstitial(S.idx)) {
         playAd('Geçiş Reklamı', () => startLevel(nextIdx));
       } else {
@@ -1099,8 +1447,67 @@
       }
     };
     E.modal.querySelector('[data-a=next]').onclick = advanceNext;
-    E.modal.querySelector('[data-a=album]').onclick = () => openMenu(L.colIdx);
-    E.modal.querySelector('[data-a=shop]').onclick = () => openShop();
+    E.modal.querySelector('[data-a=home]').onclick = () => goHome();
+    E.modal.querySelector('[data-a=album]').onclick = () => goCollections(L.colIdx);
+  }
+
+  // ---------- 7-Day Daily Reward Modal ----------
+  function openDailyReward() {
+    const today = EMod.localToday();
+    const canClaim = econ.canClaimDaily(today);
+    const curIdx = econ.currentDailyIndex(today);
+
+    const slots = EMod.DAILY_REWARDS.map((r, idx) => {
+      const isDone = idx < curIdx || (!canClaim && idx === curIdx);
+      const isToday = canClaim && idx === curIdx;
+      const cls = [r.big ? 'big' : '', isToday ? 'today' : '', isDone ? 'done' : ''].filter(Boolean).join(' ');
+      if (r.big) {
+        return `<div class="daily-slot ${cls}">
+          <div>
+            <small>7. GÜN · BÜYÜK ATÖLYE SANDIĞI</small>
+            <strong style="display:block;margin-top:2px">${r.desc}</strong>
+          </div>
+          <i>${isDone ? '✓' : r.icon}</i>
+        </div>`;
+      }
+      return `<div class="daily-slot ${cls}">
+        <small>${r.day}. Gün</small>
+        <i>${isDone ? '✓' : r.icon}</i>
+        <strong>${r.label}</strong>
+      </div>`;
+    }).join('');
+
+    E.modal.innerHTML = `<div class="card">
+      <div class="row" style="align-items:center">
+        <div style="flex:1">
+          <div class="eyebrow">7 GÜNLÜK ATÖLYE TAKVİMİ</div>
+          <h2>🎁 Günlük Ödül</h2>
+        </div>
+        <button class="icon-btn" data-a="close" aria-label="Kapat">✕</button>
+      </div>
+      <p class="sub">Her gün atölyeye uğra, art arda giriş yaparak 7. gün büyük hazineyi kazan!</p>
+      <div class="daily-grid">${slots}</div>
+      <div class="row">
+        <button class="btn primary" id="btnClaimDaily" ${canClaim ? '' : 'disabled'}>
+          ${canClaim ? `🎁 ${curIdx + 1}. Gün Ödülünü Topla` : '✓ Bugünkü Ödül Alındı'}
+        </button>
+      </div>
+    </div>`;
+    E.modal.hidden = false;
+
+    E.modal.querySelector('[data-a=close]').onclick = () => closeModal();
+    const claimBtn = $('#btnClaimDaily');
+    if (claimBtn && canClaim) {
+      claimBtn.onclick = () => {
+        const reward = econ.claimDaily(today);
+        if (!reward) return;
+        Snd.coin();
+        updateTopBar();
+        if (currentScreen === 'home') refreshHome();
+        openDailyReward();
+        toast(`🎁 ${reward.day}. Gün Ödülü: ${reward.desc} eklendi!`);
+      };
+    }
   }
 
   // ---------- Atelier Shop Modal ----------
@@ -1179,7 +1586,8 @@
     E.modal.hidden = false;
 
     E.modal.querySelector('[data-a=close]').onclick = () => {
-      if (S && S.status === 'win') showWin(store.stars[S.idx] || 1); else closeModal();
+      if (currentScreen === 'game' && S && S.status === 'win') showWin(store.stars[S.idx] || 1);
+      else closeModal();
     };
     const freeBtn = $('#btnFreeCoins');
     if (freeBtn) {
@@ -1188,6 +1596,7 @@
           econ.earn(EMod.CONFIG.rewardedCoins, 'shop_rewarded_ad');
           Snd.coin();
           updateHUD();
+          if (currentScreen === 'home') refreshHome();
           openShop();
           toast(`+${EMod.CONFIG.rewardedCoins} 🪙 eklendi!`);
         });
@@ -1200,6 +1609,7 @@
       Snd.coin();
       updateHUD();
       updateBoosters();
+      if (currentScreen === 'home') refreshHome();
       openShop();
       toast(`✓ ${res.pack.name} satın alındı!` + (res.coinsAdded ? ` (+${res.coinsAdded} 🪙)` : ''));
     });
@@ -1212,94 +1622,61 @@
       Snd.coin();
       updateHUD();
       updateBoosters();
+      if (currentScreen === 'home') refreshHome();
       openShop();
       toast(`+1 ${EMod.BOOSTERS[k].name} envantere eklendi!`);
     });
   }
 
-  // ---------- Collection Hub + Album Modal ----------
-  function openMenu(activeColIdx) {
-    if (typeof activeColIdx !== 'number') activeColIdx = L ? L.colIdx : 0;
-    const activeCol = G.COLLECTIONS[activeColIdx];
-
-    const colCards = G.COLLECTIONS.map((c, idx) => {
-      const st = colStats(idx);
-      const pct = Math.round((st.done / 12) * 100);
-      return `<button class="col-card ${idx === activeColIdx ? 'active' : ''}" data-c="${idx}">
-        <div class="col-card-top">
-          <span class="col-card-tag" style="color:${c.accent}">Koleksiyon ${c.num}</span>
-          <span class="col-card-cnt">${st.done}/12 · ★${st.stars}</span>
-        </div>
-        <strong>${c.title}</strong>
-        <div class="col-card-bar"><span style="width:${pct}%;background:${c.accent}"></span></div>
-      </button>`;
-    }).join('');
-
-    const startIdx = activeColIdx * 12 + 1;
-    let slots = '';
-    for (let k = 0; k < 12; k++) {
-      const lvIdx = startIdx + k;
-      const cur = S && S.idx === lvIdx ? ' cur' : '';
-      const pieceName = activeCol.pieces[k];
-      if (store.thumbs[lvIdx]) {
-        const st = store.stars[lvIdx] || 0;
-        slots += `<button class="slot${cur}" data-l="${lvIdx}" aria-label="${pieceName}">
-          ${store.thumbs[lvIdx]}
-          <span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span>
-          <span class="n">${k + 1}. ${pieceName}</span>
-        </button>`;
-      } else {
-        const lvlObj = getLevel(lvIdx);
-        slots += `<button class="slot todo${cur}" data-l="${lvIdx}" aria-label="${pieceName}">
-          ${silhouetteSVG(lvlObj)}
-          <span class="s">☆☆☆</span>
-          <span class="n">${k + 1}. ${pieceName}</span>
-        </button>`;
-      }
-    }
-
+  // ---------- Settings Modal ----------
+  function openSettings() {
     const tg = (k, label, sub) => `<div class="toggle ${store.settings[k] ? 'on' : ''}" data-t="${k}" role="switch" aria-checked="${store.settings[k]}" tabindex="0"><div>${label}<small>${sub}</small></div><span class="sw"></span></div>`;
-    const activeSt = colStats(activeColIdx);
+    const solvedCount = Object.keys(store.thumbs).length;
+    const totStars = totalStars();
+    const pStreak = econ.dailyPuzzleStreakAlive(EMod.localToday());
 
     E.modal.innerHTML = `<div class="card">
       <div class="row" style="align-items:center">
         <div style="flex:1">
-          <div class="eyebrow">Vitray Koleksiyonları · 12/12 Ödülü: +500 🪙</div>
-          <h2>Koleksiyon Seçimi</h2>
+          <div class="eyebrow">ATÖLYE TERCİHLERİ</div>
+          <h2>⚙ Ayarlar & Profil</h2>
         </div>
-        <button class="icon-btn" data-a="shop" title="Mağaza" style="margin-right:4px">🪙</button>
         <button class="icon-btn" data-a="close" aria-label="Kapat">✕</button>
       </div>
-      <div class="col-grid">${colCards}</div>
 
-      <div class="row" style="align-items:baseline;justify-content:space-between;margin-top:14px">
-        <h3 style="margin:0;color:${activeCol.accent}">${activeCol.num}. ${activeCol.title} (${activeSt.done}/12 · ★${activeSt.stars}/36)</h3>
-        <small style="color:var(--muted);font-size:11.5px">${activeCol.subtitle}</small>
+      <h3>Atölye İstatistikleri</h3>
+      <div class="col-grid" style="margin-bottom:6px">
+        <div class="col-card" style="cursor:default">
+          <span class="col-card-tag">Tamamlanan Vitray</span>
+          <strong style="color:var(--gold)">${solvedCount} / ${MAX_LEVEL}</strong>
+        </div>
+        <div class="col-card" style="cursor:default">
+          <span class="col-card-tag">Toplam Yıldız</span>
+          <strong style="color:var(--gold)">★ ${totStars} / ${MAX_STARS}</strong>
+        </div>
+        <div class="col-card" style="cursor:default">
+          <span class="col-card-tag">Usta Ateşi Serisi</span>
+          <strong style="color:#ffd7aa">🔥 ${econ.d.streak || 0}</strong>
+        </div>
+        <div class="col-card" style="cursor:default">
+          <span class="col-card-tag">Günlük Vitray Serisi</span>
+          <strong style="color:#c084fc">📅 ${pStreak} Gün</strong>
+        </div>
       </div>
-      <div class="album" style="margin-top:8px">${slots}</div>
 
-      <h3>Ayarlar</h3>
+      <h3>Oynanış & Erişilebilirlik</h3>
       ${tg('preview', 'Akış önizleme', 'Üzerine gelince camın nereye akacağını gösterir')}
       ${tg('cb', 'Renk körü modu', 'Dolu bölmelerde de sembolleri gösterir')}
-      ${tg('sound', 'Ses', 'Döküm ve kristal çan sesleri')}
-      <button class="linkbtn" data-a="reset">İlerlemeyi sıfırla</button>
+      ${tg('sound', 'Ses efektleri', 'Döküm, lehim ve kristal çan sesleri')}
+
+      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
+        <button class="linkbtn" data-a="reset">İlerlemeyi sıfırla</button>
+        <small style="color:var(--muted);font:600 11px var(--f-mono)">v1.2 · Stained Glass</small>
+      </div>
     </div>`;
     E.modal.hidden = false;
 
-    E.modal.querySelector('[data-a=close]').onclick = () => {
-      if (S && S.status === 'win') showWin(store.stars[S.idx] || 1); else closeModal();
-    };
-    E.modal.querySelector('[data-a=shop]').onclick = () => openShop();
-    E.modal.querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
-      Snd.click();
-      openMenu(+b.dataset.c);
-    });
-    E.modal.querySelectorAll('[data-l]').forEach(b => b.onclick = () => {
-      const lv = +b.dataset.l;
-      store.unlocked = Math.max(store.unlocked, lv); save();
-      Snd.click();
-      startLevel(lv);
-    });
+    E.modal.querySelector('[data-a=close]').onclick = () => closeModal();
     E.modal.querySelector('[data-a=reset]').onclick = () => {
       if (!confirm('Tüm koleksiyon ve altın ilerlemesi silinsin mi?')) return;
       localStorage.removeItem(KEY);
@@ -1313,40 +1690,50 @@
     });
   }
 
-  $('#btnMenu').addEventListener('click', () => { Snd.init(); Snd.click(); openMenu(L ? L.colIdx : 0); });
-  E.modal.addEventListener('click', ev => { if (ev.target === E.modal && !(S && S.status === 'win')) closeModal(); });
+  E.modal.addEventListener('click', ev => { if (ev.target === E.modal && !(currentScreen === 'game' && S && S.status === 'win')) closeModal(); });
 
   // keyboard shortcuts for desktop testing
   window.addEventListener('keydown', ev => {
-    if (!S) return;
     if (!E.modal.hidden) {
       if (ev.key === 'Escape') closeModal();
-      else if ((ev.key === 'Enter' || ev.key === ' ') && S.status === 'win') {
+      else if ((ev.key === 'Enter' || ev.key === ' ') && currentScreen === 'game' && S && S.status === 'win') {
         ev.preventDefault();
-        startLevel(Math.min(MAX_LEVEL, S.idx + 1));
+        if (S.isDaily) goHome(); else startLevel(Math.min(MAX_LEVEL, S.idx + 1));
       }
       return;
     }
+    if (currentScreen !== 'game' || !S) return;
     const n = parseInt(ev.key, 10);
     if (n >= 1 && n <= L.palette.length) selectPot(L.palette[n - 1]);
     else if (ev.key === 'z' || ev.key === 'Z') E.bUndo.click();
-    else if (ev.key === 'r' || ev.key === 'R') startLevel(S.idx);
+    else if (ev.key === 'r' || ev.key === 'R') E.bRestart.click();
     else if (ev.key === 'h' || ev.key === 'H') E.bHint.click();
-    else if (ev.key === 'ArrowLeft' && S.idx > 1) startLevel(S.idx - 1);
-    else if (ev.key === 'ArrowRight' && S.idx < MAX_LEVEL) startLevel(S.idx + 1);
+    else if (ev.key === 'ArrowLeft' && !S.isDaily && S.idx > 1) startLevel(S.idx - 1);
+    else if (ev.key === 'ArrowRight' && !S.isDaily && S.idx < MAX_LEVEL) startLevel(S.idx + 1);
   });
-  window.addEventListener('resize', () => { if (S && S.status === 'win') castRays(); });
+  window.addEventListener('resize', () => { if (currentScreen === 'game' && S && S.status === 'win') castRays(); });
 
   // ---------- boot ----------
   const qs = new URLSearchParams(location.search);
-  let startIdx = parseInt(qs.get('level'), 10);
-  if (!(startIdx >= 1)) startIdx = Math.min(MAX_LEVEL, Math.max(1, store.unlocked));
-  startLevel(startIdx);
-  if (qs.get('collections') === '1') openMenu(L.colIdx);
+  const qLevel = parseInt(qs.get('level'), 10);
+
+  if (qLevel >= 1) {
+    startLevel(qLevel);
+  } else if (qs.get('puzzle') === '1') {
+    startDailyPuzzle();
+  } else if (qs.get('collections') === '1' || qs.get('map') === '1') {
+    goCollections();
+  } else {
+    goHome();
+  }
+
   if (qs.get('shop') === '1') openShop();
+  if (qs.get('daily') === '1') openDailyReward();
+  if (qs.get('settings') === '1') openSettings();
 
   // ?demo=1 -> auto-plays the optimal solution
   if (qs.get('demo') === '1') {
+    if (currentScreen !== 'game') startLevel(Math.min(MAX_LEVEL, Math.max(1, store.unlocked)));
     const step = () => {
       if (S.status === 'win') {
         setTimeout(() => { if (qs.get('chain') === '1') { startLevel(S.idx + 1); setTimeout(step, 500); } }, 1800);

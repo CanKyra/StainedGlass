@@ -1,4 +1,4 @@
-/* Stained Glass - Economy, Monetization, Boosters & Shop Engine */
+/* Stained Glass - Economy, Monetization, Daily Rewards, Boosters & Shop Engine */
 (function (root) {
   'use strict';
 
@@ -16,6 +16,9 @@
     piggyMinBreak: 600,
     colCompleteCoins: 500,
     colMasterCoins: 1000,
+    dailyPuzzleBase: 120,
+    dailyPuzzlePerStreak: 25,
+    dailyPuzzleStreakCap: 7,
     interstitialFromLevel: 10,
     interstitialEvery: 3,
     continuePrices: [450, 900, 1500],
@@ -37,6 +40,24 @@
     undo: { id: 'undo', icon: '↶', name: 'Geri al', desc: 'Son dökümü geri alır', price: 150 },
     hint: { id: 'hint', icon: '?', name: 'İpucu', desc: 'En az dökümlü 3★ sıradaki hamleyi gösterir', price: 150 },
   };
+
+  const DAILY_REWARDS = [
+    { day: 1, label: '100 🪙', desc: '100 Altın', coins: 100, icon: '🪙' },
+    { day: 2, label: '150 🪙', desc: '150 Altın', coins: 150, icon: '🪙' },
+    { day: 3, label: '2x ↶', desc: '2x Geri Al', inv: { undo: 2 }, icon: '↶' },
+    { day: 4, label: '250 🪙', desc: '250 Altın', coins: 250, icon: '🪙' },
+    { day: 5, label: '❄ + 🔗', desc: '1x Soğut + 1x Lehim', inv: { cool: 1, solder: 1 }, icon: '❄' },
+    { day: 6, label: '400 🪙', desc: '400 Altın', coins: 400, icon: '🪙' },
+    { day: 7, label: '800 🪙 + Paket', desc: '800 Altın + 1x (+2 Döküm) + 1x İpucu', coins: 800, inv: { plus: 1, hint: 1 }, icon: '🎁', big: true },
+  ];
+
+  const STAR_CHESTS = [
+    { stars: 12, coins: 200, inv: { undo: 1 }, label: 'Bronz Sandık' },
+    { stars: 36, coins: 350, inv: { cool: 1, solder: 1 }, label: 'Gümüş Sandık' },
+    { stars: 72, coins: 600, inv: { plus: 1, solder: 1 }, label: 'Altın Sandık' },
+    { stars: 108, coins: 900, inv: { cool: 2, solder: 2, plus: 1 }, label: 'Safir Sandık' },
+    { stars: 144, coins: 1500, inv: { cool: 3, solder: 3, plus: 3 }, label: 'Katedral Tacı' },
+  ];
 
   const IAP_PRODUCTS = [
     {
@@ -132,6 +153,12 @@
     },
   ];
 
+  function localToday() {
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    return Math.floor(midnight / 86400000);
+  }
+
   function createDefaultState() {
     return {
       coins: CONFIG.startCoins,
@@ -145,6 +172,12 @@
       winsSinceInter: 0,
       claimedCols: {},
       claimedMasterCols: {},
+      claimedStarChests: {},
+      rewardDay: -1,
+      rewardIdx: -1,
+      puzzleDay: -1,
+      puzzleStreak: 0,
+      puzzleBest: 0,
       events: [],
     };
   }
@@ -157,6 +190,7 @@
       this.d.inv = Object.assign({}, def.inv, (saved && saved.inv) || {});
       this.d.claimedCols = Object.assign({}, (saved && saved.claimedCols) || {});
       this.d.claimedMasterCols = Object.assign({}, (saved && saved.claimedMasterCols) || {});
+      this.d.claimedStarChests = Object.assign({}, (saved && saved.claimedStarChests) || {});
     }
 
     toJSON() {
@@ -254,6 +288,89 @@
       }
     }
 
+    // ---------- Daily Login Reward (7-day cycle) ----------
+    canClaimDaily(today = localToday()) {
+      return this.d.rewardDay !== today;
+    }
+
+    currentDailyIndex(today = localToday()) {
+      if (!this.canClaimDaily(today)) return Math.max(0, this.d.rewardIdx);
+      if (this.d.rewardDay === today - 1) return (this.d.rewardIdx + 1) % DAILY_REWARDS.length;
+      return 0;
+    }
+
+    claimDaily(today = localToday()) {
+      if (!this.canClaimDaily(today)) return null;
+      const idx = this.currentDailyIndex(today);
+      const r = DAILY_REWARDS[idx];
+      this.d.rewardDay = today;
+      this.d.rewardIdx = idx;
+      if (r.coins) this.d.coins += r.coins;
+      if (r.inv) {
+        for (const k in r.inv) {
+          this.d.inv[k] = (this.d.inv[k] || 0) + r.inv[k];
+        }
+      }
+      this.track('daily_reward_claimed', { day: r.day, coins: r.coins || 0 });
+      this.save();
+      return r;
+    }
+
+    // ---------- Daily Stained Glass Puzzle ----------
+    isDailyPuzzleDone(today = localToday()) {
+      return this.d.puzzleDay === today;
+    }
+
+    dailyPuzzleStreakAlive(today = localToday()) {
+      return this.d.puzzleDay >= today - 1 ? (this.d.puzzleStreak || 0) : 0;
+    }
+
+    dailyPuzzleStreakIfWon(today = localToday()) {
+      if (this.isDailyPuzzleDone(today)) return this.d.puzzleStreak || 1;
+      return this.d.puzzleDay === today - 1 ? (this.d.puzzleStreak || 0) + 1 : 1;
+    }
+
+    onDailyPuzzleWin(today = localToday()) {
+      if (this.isDailyPuzzleDone(today)) {
+        return { alreadyDone: true, streak: this.d.puzzleStreak || 1, coins: 35, piggyAdded: 0, piggyTotal: this.d.piggy };
+      }
+      const s = this.dailyPuzzleStreakIfWon(today);
+      this.d.puzzleDay = today;
+      this.d.puzzleStreak = s;
+      this.d.puzzleBest = Math.max(this.d.puzzleBest || 0, s);
+      const coins = CONFIG.dailyPuzzleBase + Math.min(s, CONFIG.dailyPuzzleStreakCap) * CONFIG.dailyPuzzlePerStreak;
+      const prevPiggy = this.d.piggy;
+      this.d.piggy = Math.min(CONFIG.piggyCap, this.d.piggy + 90);
+      this.earn(coins, 'daily_puzzle_win');
+      return {
+        alreadyDone: false,
+        streak: s,
+        coins,
+        piggyAdded: this.d.piggy - prevPiggy,
+        piggyTotal: this.d.piggy,
+      };
+    }
+
+    // ---------- Star Chest Milestones ----------
+    claimableStarChests(totalStars) {
+      return STAR_CHESTS.filter(c => totalStars >= c.stars && !this.d.claimedStarChests[c.stars]);
+    }
+
+    claimStarChest(starTarget, totalStars) {
+      const chest = STAR_CHESTS.find(c => c.stars === starTarget);
+      if (!chest || totalStars < chest.stars || this.d.claimedStarChests[starTarget]) return null;
+      this.d.claimedStarChests[starTarget] = true;
+      if (chest.coins) this.d.coins += chest.coins;
+      if (chest.inv) {
+        for (const k in chest.inv) {
+          this.d.inv[k] = (this.d.inv[k] || 0) + chest.inv[k];
+        }
+      }
+      this.track('star_chest_claimed', { stars: starTarget, coins: chest.coins });
+      this.save();
+      return chest;
+    }
+
     shouldShowInterstitial(levelIdx) {
       if (this.d.noAds || this.d.payer) return false;
       if (levelIdx < CONFIG.interstitialFromLevel) return false;
@@ -293,7 +410,7 @@
     }
   }
 
-  const api = { Economy, CONFIG, BOOSTERS, IAP_PRODUCTS, createDefaultState };
+  const api = { Economy, CONFIG, BOOSTERS, DAILY_REWARDS, STAR_CHESTS, IAP_PRODUCTS, localToday, createDefaultState };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SGEcon = api;
 })(typeof window !== 'undefined' ? window : globalThis);

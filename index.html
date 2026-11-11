@@ -18,51 +18,224 @@
 </head>
 <body>
   <div id="app">
+    <!-- ÜST ÇUBUK (Her ekranda sabit) -->
     <header class="hud">
-      <button class="col-btn" id="btnMenu" aria-label="Koleksiyonlar ve ayarlar" title="Koleksiyon seç ve albümü görüntüle">
+      <button class="nav-pill" id="btnHome" aria-label="Ana Ekran" title="Ana Ekrana Dön" hidden>
+        <span class="nav-ico">⌂</span>
+        <span>Ana Ekran</span>
+      </button>
+
+      <button class="star-pill" id="btnStars" aria-label="Yıldız Yolu ve Sandıklar" title="Yıldız Yolu ve Hazine Sandıkları">
+        <span class="star-ico">★</span>
+        <b id="starsTotalN">0/144</b>
+        <em class="pill-badge" id="starBadge" hidden>!</em>
+      </button>
+
+      <button class="col-btn" id="btnMenu" aria-label="Koleksiyonlar" title="Koleksiyon seç ve galeriyi aç" hidden>
         <span class="col-dot" id="colDot"></span>
         <div class="col-btn-txt">
           <small id="colEyebrow">KOLEKSİYON 1 · 0/12</small>
           <strong id="colTitle">Gotik Katedraller ▾</strong>
         </div>
       </button>
-      <button class="streak-pill" id="btnStreak" title="Kazanma Serisi: 3+ seride her seviyeye +1 ekstra döküm hakkıyla başlarsın!">
+
+      <div class="hud-spacer" id="hudSpacer"></div>
+
+      <button class="streak-pill" id="btnStreak" title="Usta Ateşi Serisi: 3+ seride her seviyeye +1 ekstra döküm hakkıyla başlarsın!">
         <span>🔥</span><b id="streakN">0</b>
       </button>
+
       <button class="coin-pill" id="btnShop" aria-label="Atölye Mağazası" title="Atölye Mağazası ve Kumbara">
         <span class="coin-ico">🪙</span><b id="coinsN">600</b><span class="coin-plus">+</span>
       </button>
+
+      <button class="settings-pill" id="btnSettings" aria-label="Ayarlar" title="Ayarlar">⚙</button>
     </header>
 
-    <div class="piece-bar">
-      <button class="nav-btn" id="btnPrev" aria-label="Önceki vitray" title="Önceki vitray">‹</button>
-      <div class="piece-info">
-        <h1 id="lvlName">1. Chartres</h1>
-        <span id="lvlMeta">Yuvarlak kemer · 5 bölme</span>
+    <!-- 1. ANA EKRAN (HOME SCREEN) -->
+    <section id="homeScreen" class="screen home-screen">
+      <div class="home-bg" aria-hidden="true">
+        <div class="mote m1"></div>
+        <div class="mote m2"></div>
+        <div class="mote m3"></div>
+        <div class="mote m4"></div>
+        <div class="mote m5"></div>
+        <div class="mote m6"></div>
       </div>
-      <button class="nav-btn" id="btnNext" aria-label="Sonraki vitray" title="Sonraki vitray">›</button>
-      <button class="nav-btn" id="bRestart" aria-label="Baştan başlat" title="Seviyeyi baştan başlat">⟳</button>
-      <div class="goal" title="3 yıldız hedefi (en az döküm sayısı)">
-        <span>★★★</span><b id="goalN">5</b>
+
+      <div class="home-hero">
+        <div class="rose-halo" aria-hidden="true"></div>
+        <svg class="rose-logo" viewBox="0 0 220 220" aria-hidden="true">
+          <defs>
+            <radialGradient id="roseCoreG" cx=".5" cy=".5" r=".5">
+              <stop offset="0" stop-color="#FFF5D6"/>
+              <stop offset=".55" stop-color="#F5C542"/>
+              <stop offset="1" stop-color="#D97706"/>
+            </radialGradient>
+            <linearGradient id="leadRimG" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#6E6494"/>
+              <stop offset=".5" stop-color="#2D2646"/>
+              <stop offset="1" stop-color="#141024"/>
+            </linearGradient>
+          </defs>
+          <!-- Outer Gothic Frame -->
+          <circle cx="110" cy="110" r="102" fill="#120E22" stroke="url(#leadRimG)" stroke-width="10"/>
+          <circle cx="110" cy="110" r="94" fill="none" stroke="#F5C542" stroke-width="1.5" stroke-opacity=".45"/>
+          <!-- 12 Stained Glass Petals -->
+          <g stroke="#0D0A18" stroke-width="4.5" stroke-linejoin="round">
+            <path d="M110,110 L92,22 A90,90 0 0,1 128,22 Z" fill="#E23D3D"/>
+            <path d="M110,110 L128,22 A90,90 0 0,1 160,36 Z" fill="#F6C21C"/>
+            <path d="M110,110 L160,36 A90,90 0 0,1 184,64 Z" fill="#2F6FE4"/>
+            <path d="M110,110 L184,64 A90,90 0 0,1 198,92 Z" fill="#9A4DE0"/>
+            <path d="M110,110 L198,92 A90,90 0 0,1 198,128 Z" fill="#1EAA5C"/>
+            <path d="M110,110 L198,128 A90,90 0 0,1 184,156 Z" fill="#F2771A"/>
+            <path d="M110,110 L184,156 A90,90 0 0,1 160,184 Z" fill="#E23D3D"/>
+            <path d="M110,110 L160,184 A90,90 0 0,1 128,198 Z" fill="#2F6FE4"/>
+            <path d="M110,110 L128,198 A90,90 0 0,1 92,198 Z" fill="#F6C21C"/>
+            <path d="M110,110 L92,198 A90,90 0 0,1 60,184 Z" fill="#1EAA5C"/>
+            <path d="M110,110 L60,184 A90,90 0 0,1 36,156 Z" fill="#9A4DE0"/>
+            <path d="M110,110 L36,156 A90,90 0 0,1 22,128 Z" fill="#E8489A"/>
+            <path d="M110,110 L22,128 A90,90 0 0,1 22,92 Z" fill="#2F6FE4"/>
+            <path d="M110,110 L22,92 A90,90 0 0,1 36,64 Z" fill="#F6C21C"/>
+            <path d="M110,110 L36,64 A90,90 0 0,1 60,36 Z" fill="#1EAA5C"/>
+            <path d="M110,110 L60,36 A90,90 0 0,1 92,22 Z" fill="#9A4DE0"/>
+          </g>
+          <!-- Inner Medallion Ring -->
+          <circle cx="110" cy="110" r="54" fill="none" stroke="#0D0A18" stroke-width="5.5"/>
+          <circle cx="110" cy="110" r="54" fill="none" stroke="#9B90C2" stroke-width="1.3" stroke-opacity=".75"/>
+          <!-- Glass Highlight Sheen -->
+          <ellipse cx="88" cy="76" rx="48" ry="26" transform="rotate(-28 88 76)" fill="#FFF" fill-opacity=".22"/>
+          <!-- Center Golden Rosette -->
+          <circle cx="110" cy="110" r="24" fill="url(#roseCoreG)" stroke="#0D0A18" stroke-width="5"/>
+          <path d="M110,92 L114,106 L128,110 L114,114 L110,128 L106,114 L92,110 L106,106 Z" fill="#FFF"/>
+        </svg>
+
+        <div class="brand-lockup">
+          <span class="brand-eyebrow">KATEDRAL &amp; CAM SANATI</span>
+          <h1 class="brand-title">STAINED<span>GLASS</span></h1>
+        </div>
       </div>
-      <div class="pours" id="pours"><b id="poursN">5</b><span>DÖKÜM</span></div>
-    </div>
 
-    <div id="tip" class="tip" hidden></div>
+      <!-- Aktif Koleksiyon ve Sıradaki Vitray Kartı -->
+      <button class="home-col-card" id="homeColCard" aria-label="Koleksiyon Galerisini Aç">
+        <div class="home-col-thumb" id="homeColThumb"></div>
+        <div class="home-col-body">
+          <div class="home-col-top">
+            <span class="home-col-tag" id="homeColTag">KOLEKSİYON 1</span>
+            <span class="home-col-stat" id="homeColStat">0/12 · ★0/36</span>
+          </div>
+          <strong class="home-col-name" id="homeColName">Gotik Katedraller</strong>
+          <span class="home-col-next" id="homeColNext">Sıradaki: 1. Chartres · Yuvarlak kemer</span>
+          <div class="col-prog-bar"><div class="col-prog-fill" id="homeColFill" style="width:0%"></div></div>
+        </div>
+        <span class="home-col-arrow">›</span>
+      </button>
 
-    <main id="stage">
-      <svg id="board" viewBox="0 0 400 540" preserveAspectRatio="xMidYMid meet" aria-label="Vitray penceresi"></svg>
-    </main>
+      <!-- Seri Bilgi Şeridi + Büyük OYNA Düğmesi -->
+      <div class="home-cta">
+        <div class="home-streak-strip" id="homeStreakStrip">
+          <span>🔥</span>
+          <span id="homeStreakTxt">3 vitray üst üste kazan, her bölüme +1 dökümle başla!</span>
+        </div>
+        <button class="play-cta-btn" id="btnHomePlay">
+          <span class="play-cta-main" id="homePlayMain">▶ OYNA · VİTRAY 1</span>
+          <small class="play-cta-sub" id="homePlaySub">Chartres · Gotik Katedraller</small>
+        </button>
+      </div>
 
-    <div id="pots" class="pots" role="radiogroup" aria-label="Erimiş cam potaları"></div>
+      <!-- Alt Hızlı Erişim Düğmeleri (Günlük Ödül, Günün Vitrayı, Galeri, Kumbara/Mağaza) -->
+      <nav class="home-dock" aria-label="Atölye Kısayolları">
+        <button class="dock-btn" id="btnDailyReward">
+          <div class="dock-circle dock-red">
+            <i>🎁</i>
+            <em class="dock-badge" id="badgeDailyReward" hidden>!</em>
+          </div>
+          <span>Günlük Ödül</span>
+        </button>
 
-    <div class="boosters">
-      <button class="boost" id="bCool" title="Bir sonraki döküm taşmaz"><i>❄</i><span>Soğut</span><em id="cCool">2</em></button>
-      <button class="boost" id="bSolder" title="Açık bir kurşun hattını lehimleyip kapat"><i>🔗</i><span>Lehim</span><em id="cSolder">2</em></button>
-      <button class="boost" id="bPlus" title="+2 döküm hakkı"><i>+2</i><span>Döküm</span><em id="cPlus">1</em></button>
-      <button class="boost" id="bUndo" title="Son dökümü geri al"><i>↶</i><span>Geri al</span><em id="cUndo">3</em></button>
-      <button class="boost" id="bHint" title="Sıradaki en iyi 3★ hamle"><i>?</i><span>İpucu</span><em id="cHint">3</em></button>
-    </div>
+        <button class="dock-btn" id="btnDailyPuzzle">
+          <div class="dock-circle dock-purple">
+            <i>📅</i>
+            <em class="dock-badge" id="badgeDailyPuzzle" hidden>!</em>
+          </div>
+          <span id="lblDailyPuzzle">Günün Vitrayı</span>
+        </button>
+
+        <button class="dock-btn" id="btnHomeGallery">
+          <div class="dock-circle dock-blue">
+            <i>🏛</i>
+            <em class="dock-badge" id="badgeGallery" hidden>!</em>
+          </div>
+          <span>Koleksiyon</span>
+        </button>
+
+        <button class="dock-btn" id="btnHomePiggy">
+          <div class="dock-circle dock-gold">
+            <i>🏺</i>
+            <em class="dock-badge gold" id="badgePiggy" hidden>DOLU</em>
+          </div>
+          <span id="lblHomePiggy">Kumbara</span>
+        </button>
+      </nav>
+    </section>
+
+    <!-- 2. KOLEKSİYON GALERİSİ & SEVİYE SEÇİM EKRANI -->
+    <section id="colScreen" class="screen col-screen" hidden>
+      <div class="col-screen-scroll">
+        <!-- Yıldız Yolu ve Hazine Sandıkları -->
+        <div class="star-road-card" id="starRoadCard"></div>
+
+        <!-- 4 Koleksiyon Sekmesi -->
+        <div class="section-head">
+          <h2>Vitray Koleksiyonları</h2>
+          <small>12/12 Tamamlama: +500 🪙 · 36/36★ Ustalık: +1.000 🪙</small>
+        </div>
+        <div class="col-grid" id="colScreenGrid"></div>
+
+        <!-- Seçili Koleksiyonun 12 Vitraylık Vitrini -->
+        <div class="section-head" id="colActiveHeader"></div>
+        <div class="album" id="colScreenAlbum"></div>
+      </div>
+
+      <div class="col-screen-footer">
+        <button class="play-cta-btn compact" id="btnColPlay">
+          <span class="play-cta-main" id="colPlayMain">▶ VİTRAY 1 · CHARTRES</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 3. OYUN EKRANI (GAMEPLAY SCREEN) -->
+    <section id="gameScreen" class="screen game-screen" hidden>
+      <div class="piece-bar">
+        <button class="nav-btn" id="btnPrev" aria-label="Önceki vitray" title="Önceki vitray">‹</button>
+        <div class="piece-info">
+          <h1 id="lvlName">1. Chartres</h1>
+          <span id="lvlMeta">Yuvarlak kemer · 5 bölme</span>
+        </div>
+        <button class="nav-btn" id="btnNext" aria-label="Sonraki vitray" title="Sonraki vitray">›</button>
+        <button class="nav-btn" id="bRestart" aria-label="Baştan başlat" title="Seviyeyi baştan başlat">⟳</button>
+        <div class="goal" title="3 yıldız hedefi (en az döküm sayısı)">
+          <span>★★★</span><b id="goalN">5</b>
+        </div>
+        <div class="pours" id="pours"><b id="poursN">5</b><span>DÖKÜM</span></div>
+      </div>
+
+      <div id="tip" class="tip" hidden></div>
+
+      <main id="stage">
+        <svg id="board" viewBox="0 0 400 540" preserveAspectRatio="xMidYMid meet" aria-label="Vitray penceresi"></svg>
+      </main>
+
+      <div id="pots" class="pots" role="radiogroup" aria-label="Erimiş cam potaları"></div>
+
+      <div class="boosters">
+        <button class="boost" id="bCool" title="Bir sonraki döküm taşmaz"><i>❄</i><span>Soğut</span><em id="cCool">2</em></button>
+        <button class="boost" id="bSolder" title="Açık bir kurşun hattını lehimleyip kapat"><i>🔗</i><span>Lehim</span><em id="cSolder">2</em></button>
+        <button class="boost" id="bPlus" title="+2 döküm hakkı"><i>+2</i><span>Döküm</span><em id="cPlus">1</em></button>
+        <button class="boost" id="bUndo" title="Son dökümü geri al"><i>↶</i><span>Geri al</span><em id="cUndo">3</em></button>
+        <button class="boost" id="bHint" title="Sıradaki en iyi 3★ hamle"><i>?</i><span>İpucu</span><em id="cHint">3</em></button>
+      </div>
+    </section>
 
     <div id="rays" class="rays" aria-hidden="true"></div>
     <div id="sheet" class="sheet" hidden></div>
