@@ -37,41 +37,6 @@ jobs:
           which xcodegen >/dev/null 2>&1 || brew install xcodegen
           mkdir -p ios/Web
           cp index.html style.css generator.js game.js icon.svg manifest.webmanifest ios/Web/
-
-          # 1024x1024 RGB (alfasız) AppIcon üret
-          ICONSET="ios/Assets.xcassets/AppIcon.appiconset"
-          mkdir -p "$ICONSET"
-          sed 's/rx="112"//' icon.svg > /tmp/icon_sq.svg
-          qlmanage -t -s 1024 -o /tmp /tmp/icon_sq.svg >/dev/null 2>&1 || true
-          python3 - <<'PY'
-          import os, subprocess
-          from PIL import Image, ImageDraw
-          p = "/tmp/icon_sq.svg.png"
-          if os.path.exists(p):
-              im = Image.open(p).convert("RGBA").resize((1024, 1024), Image.LANCZOS)
-              bg = Image.new("RGB", (1024, 1024), (0x17, 0x13, 0x2B))
-              bg.paste(im, mask=im.split()[3])
-          else:
-              bg = Image.new("RGB", (1024, 1024), (0x17, 0x13, 0x2B))
-          bg.save("ios/Assets.xcassets/AppIcon.appiconset/icon-1024.png", "PNG")
-          PY
-          cat > "$ICONSET/Contents.json" <<'JSON'
-          {
-            "images": [
-              {
-                "filename": "icon-1024.png",
-                "idiom": "universal",
-                "platform": "ios",
-                "size": "1024x1024"
-              }
-            ],
-            "info": { "author": "xcode", "version": 1 }
-          }
-          JSON
-          cat > "ios/Assets.xcassets/Contents.json" <<'JSON'
-          { "info": { "author": "xcode", "version": 1 } }
-          JSON
-
           sed -i '' "s/CURRENT_PROJECT_VERSION: .*/CURRENT_PROJECT_VERSION: \"${GITHUB_RUN_NUMBER}\"/" ios/project.yml
           (cd ios && xcodegen generate)
 
@@ -103,7 +68,7 @@ jobs:
           W="$RUNNER_TEMP/sign"
           mkdir -p "$W"
           python3 -m venv "$RUNNER_TEMP/venv"
-          "$RUNNER_TEMP/venv/bin/pip" install --quiet pyjwt cryptography pillow
+          "$RUNNER_TEMP/venv/bin/pip" install --quiet pyjwt cryptography
           PY="$RUNNER_TEMP/venv/bin/python"
 
           openssl genrsa -out "$W/dist.key" 2048 2>/dev/null
