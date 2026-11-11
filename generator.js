@@ -1,9 +1,73 @@
-/* Stained Glass – level generator + solver (pure, no DOM; runs in browser and Node) */
+/* Stained Glass - collection + level generator + solver (pure, runs in browser and Node) */
 (function (root) {
   'use strict';
 
   const W = 400, H = 540, CX = 200;
   const PALETTE = ['r', 'b', 'y', 'g', 'p', 'o', 'k'];
+
+  // ---------- Collections definition ----------
+  const COLLECTIONS = [
+    {
+      id: 'cathedrals',
+      num: 1,
+      title: 'Gotik Katedraller',
+      subtitle: 'Avrupa katedrallerinin gül ve kemer vitrayları',
+      badge: 'Katedral Serisi',
+      accent: '#F5C542',
+      shapes: ['round', 'gothic', 'rose'],
+      colors: ['r', 'b', 'y', 'g', 'p', 'o', 'k'],
+      pieces: [
+        'Chartres', 'Sainte-Chapelle', 'Notre-Dame', 'Köln',
+        'York Minster', 'Reims', 'Canterbury', 'Sagrada Família',
+        'Strasbourg', 'St. Vitus', 'Milano Duomo', 'Westminster'
+      ]
+    },
+    {
+      id: 'iznik',
+      num: 2,
+      title: 'İznik & Revzen',
+      subtitle: 'Osmanlı revzen pencereleri ve Selçuklu madalyonları',
+      badge: 'Çini & Revzen',
+      accent: '#2CC5B8',
+      shapes: ['pointed_arch', 'hex_medallion', 'domed_mihrab'],
+      colors: ['b', 'g', 'r', 'y', 'p', 'o', 'k'],
+      pieces: [
+        'Rüstem Paşa', 'Sultanahmet', 'Süleymaniye', 'Yeşil Türbe',
+        'Topkapı Harem', 'Karatay Medresesi', 'Eşrefoğlu', 'İnce Minare',
+        'Sokollu Mehmet', 'Yeni Cami', 'Muradiye', 'Çinili Köşk'
+      ]
+    },
+    {
+      id: 'artnouveau',
+      num: 3,
+      title: 'Art Nouveau & Tiffany',
+      subtitle: 'Organik oval formlar, kehribar ve zümrüt camlar',
+      badge: 'Atölye Serisi',
+      accent: '#E879A8',
+      shapes: ['oval_medallion', 'tiffany_dome', 'triptych_arch'],
+      colors: ['y', 'g', 'p', 'o', 'k', 'b', 'r'],
+      pieces: [
+        'Casa Batlló', 'Horta Konağı', 'Palau de la Música', 'Tiffany Lotus',
+        'Galeries Lafayette', 'Majorelle', 'Secession Viyana', 'Mackintosh Rose',
+        'Guimard Metro', 'Klimt Altın', 'Mucha İris', 'Lalique Yusufçuk'
+      ]
+    },
+    {
+      id: 'nordic',
+      num: 4,
+      title: 'Kuzey Prizması',
+      subtitle: 'Modern kristal pencereler ve kuzey ışıkları',
+      badge: 'Modern Seri',
+      accent: '#7CC6FE',
+      shapes: ['crystal_diamond', 'tall_lancet', 'octagon_star'],
+      colors: ['b', 'p', 'g', 'k', 'y', 'r', 'o'],
+      pieces: [
+        'Hallgrímskirkja', 'Arktik Katedral', 'Harpa Reykjavik', 'Kamppi Şapeli',
+        'Kiasma', 'Buzul Prizması', 'Kuzey Tacı', 'Fiyort Aynası',
+        'Aurora Borealis', 'Kristal Kubbe', 'Geceyarısı Güneşi', 'Kutup Yıldızı'
+      ]
+    }
+  ];
 
   // ---------- RNG ----------
   function mulberry32(a) {
@@ -27,7 +91,7 @@
     return arr;
   }
 
-  // ---------- Geometry ----------
+  // ---------- Geometry (all shapes are strictly convex CCW polygons) ----------
   function shapePoly(type) {
     const pts = [];
     if (type === 'gothic') {
@@ -35,9 +99,57 @@
       pts.push([L, B], [R, B], [R, S]);
       for (let k = 1; k <= 12; k++) { const t = (Math.PI / 3) * k / 12; pts.push([L + w * Math.cos(t), S - w * Math.sin(t)]); }
       for (let k = 11; k >= 0; k--) { const t = (Math.PI / 3) * k / 12; pts.push([R - w * Math.cos(t), S - w * Math.sin(t)]); }
+    } else if (type === 'tall_lancet') {
+      const L = 84, R = 316, B = 514, w = R - L, apex = 26, S = apex + w * Math.sin(Math.PI / 3);
+      pts.push([L, B], [R, B], [R, S]);
+      for (let k = 1; k <= 12; k++) { const t = (Math.PI / 3) * k / 12; pts.push([L + w * Math.cos(t), S - w * Math.sin(t)]); }
+      for (let k = 11; k >= 0; k--) { const t = (Math.PI / 3) * k / 12; pts.push([R - w * Math.cos(t), S - w * Math.sin(t)]); }
+    } else if (type === 'pointed_arch') {
+      const L = 60, R = 340, B = 510, w = R - L, apex = 36, S = apex + w * Math.sin(Math.PI / 3);
+      pts.push([L, B], [R, B], [R, S]);
+      for (let k = 1; k <= 12; k++) { const t = (Math.PI / 3) * k / 12; pts.push([L + w * Math.cos(t), S - w * Math.sin(t)]); }
+      for (let k = 11; k >= 0; k--) { const t = (Math.PI / 3) * k / 12; pts.push([R - w * Math.cos(t), S - w * Math.sin(t)]); }
     } else if (type === 'rose') {
       const cx = CX, cy = 272, r = 182;
       for (let k = 0; k < 36; k++) { const t = Math.PI * 2 * k / 36; pts.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); }
+    } else if (type === 'oval_medallion') {
+      const cx = CX, cy = 272, rx = 148, ry = 228;
+      for (let k = 0; k < 36; k++) { const t = Math.PI * 2 * k / 36; pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
+    } else if (type === 'hex_medallion') {
+      // Vertically elongated 8-sided Seljuk medallion (CCW in screen coords -> decreasing angle or explicit CCW)
+      pts.push(
+        [136, 508], [264, 508], [340, 412], [340, 132],
+        [264, 36], [136, 36], [60, 132], [60, 412]
+      );
+    } else if (type === 'crystal_diamond') {
+      // Faceted Nordic crystal (8-gon)
+      pts.push(
+        [156, 512], [244, 512], [336, 396], [336, 148],
+        [244, 32], [156, 32], [64, 148], [64, 396]
+      );
+    } else if (type === 'octagon_star') {
+      const cx = CX, cy = 272, rx = 166, ry = 216;
+      for (let k = 0; k < 12; k++) {
+        const t = Math.PI * 2 * k / 12 + Math.PI / 12;
+        pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]);
+      }
+    } else if (type === 'triptych_arch') {
+      // Art Deco / Secession stepped shoulder arch (strictly convex)
+      pts.push(
+        [68, 512], [332, 512], [332, 188], [296, 92],
+        [238, 36], [162, 36], [104, 92], [68, 188]
+      );
+    } else if (type === 'tiffany_dome') {
+      // Wide domed arch with gently tapered base
+      const L = 58, R = 342, B = 510, r = 142, S = 38 + r;
+      pts.push([78, B], [322, B], [R, 340], [R, S]);
+      for (let k = 1; k < 24; k++) { const t = Math.PI * k / 24; pts.push([CX + r * Math.cos(t), S - r * Math.sin(t)]); }
+      pts.push([L, S], [L, 340]);
+    } else if (type === 'domed_mihrab') {
+      const L = 66, R = 334, B = 512, rx = 134, ry = 168, S = 36 + ry;
+      pts.push([L, B], [R, B], [R, S]);
+      for (let k = 1; k < 24; k++) { const t = Math.PI * k / 24; pts.push([CX + rx * Math.cos(t), S - ry * Math.sin(t)]); }
+      pts.push([L, S]);
     } else { // round arch
       const L = 62, R = 338, B = 512, r = 138, S = 34 + r;
       pts.push([L, B], [R, B], [R, S]);
@@ -46,6 +158,7 @@
     }
     return pts;
   }
+
   function polyArea(p) {
     let a = 0;
     for (let i = 0; i < p.length; i++) { const q = p[(i + 1) % p.length]; a += p[i][0] * q[1] - q[0] * p[i][1]; }
@@ -81,7 +194,6 @@
     }
     return true;
   }
-  // Sutherland–Hodgman against half-plane (p-m)·d <= 0, tracking which neighbour created each edge
   function clipHalf(poly, lab, m, d, j) {
     const out = [], ol = [], N = poly.length;
     const f = p => (p[0] - m[0]) * d[0] + (p[1] - m[1]) * d[1];
@@ -173,8 +285,6 @@
   }
 
   // ---------- Solver ----------
-  // State = bitmask of correctly filled cells. A pour into empty cell x floods (downward, through open gaps)
-  // every reachable empty cell. A move is legal only if the whole flood matches x's target colour.
   function solveFrom(n, down, target, startMask) {
     const size = 1 << n, full = size - 1;
     const dist = new Int8Array(size).fill(-1), first = new Int8Array(size).fill(-1);
@@ -205,25 +315,38 @@
     return null;
   }
 
-  // ---------- Level table ----------
-  const TABLE = [
-    { n: 5, c: 2, open: 0, slack: 0, shape: 'round', minSave: 0, traps: 0, bias: .3 },
-    { n: 6, c: 2, open: .8, sameOnly: true, slack: 1, shape: 'gothic', minSave: 2, traps: 0, bias: .6 },
-    { n: 7, c: 2, open: .7, slack: 1, shape: 'round', minSave: 2, traps: 1, bias: .5 },
-    { n: 8, c: 3, open: .65, slack: 1, shape: 'rose', minSave: 2, traps: 1, bias: .45 },
-    { n: 9, c: 3, open: .65, slack: 1, shape: 'gothic', minSave: 3, traps: 2, bias: .45 },
-    { n: 10, c: 3, open: .65, slack: 0, shape: 'round', minSave: 3, traps: 2, bias: .45 },
-    { n: 11, c: 4, open: .65, slack: 1, shape: 'rose', minSave: 3, traps: 2, bias: .45 },
-    { n: 12, c: 4, open: .7, slack: 0, shape: 'gothic', minSave: 4, traps: 3, bias: .45 },
-    { n: 13, c: 4, open: .7, slack: 1, shape: 'round', minSave: 4, traps: 3, bias: .45 },
-    { n: 14, c: 5, open: .7, slack: 0, shape: 'rose', minSave: 4, traps: 3, bias: .45 },
-    { n: 15, c: 5, open: .72, slack: 1, shape: 'gothic', minSave: 5, traps: 4, bias: .45 },
-    { n: 16, c: 5, open: .72, slack: 0, shape: 'round', minSave: 5, traps: 4, bias: .45 },
+  // ---------- Per-collection 12-level curve ----------
+  const CURVE = [
+    { n: 5, c: 2, open: 0, slack: 0, minSave: 0, traps: 0, bias: .35 },
+    { n: 6, c: 2, open: .8, sameOnly: true, slack: 1, minSave: 2, traps: 0, bias: .6 },
+    { n: 7, c: 2, open: .7, slack: 1, minSave: 2, traps: 1, bias: .5 },
+    { n: 8, c: 3, open: .65, slack: 1, minSave: 2, traps: 1, bias: .45 },
+    { n: 9, c: 3, open: .65, slack: 1, minSave: 3, traps: 2, bias: .45 },
+    { n: 10, c: 3, open: .65, slack: 1, minSave: 3, traps: 2, bias: .45 },
+    { n: 11, c: 4, open: .65, slack: 1, minSave: 3, traps: 2, bias: .45 },
+    { n: 12, c: 4, open: .7, slack: 1, minSave: 4, traps: 3, bias: .45 },
+    { n: 13, c: 4, open: .7, slack: 1, minSave: 4, traps: 3, bias: .45 },
+    { n: 14, c: 5, open: .7, slack: 1, minSave: 4, traps: 3, bias: .45 },
+    { n: 15, c: 5, open: .72, slack: 1, minSave: 5, traps: 4, bias: .45 },
+    { n: 16, c: 5, open: .72, slack: 0, minSave: 5, traps: 4, bias: .45 },
   ];
+
   function params(idx) {
-    if (idx <= TABLE.length) return TABLE[idx - 1];
-    const shapes = ['round', 'gothic', 'rose'];
-    return { n: 15 + (idx % 3), c: 5 + (idx % 4 === 0 ? 1 : 0), open: .72, slack: idx % 2, shape: shapes[idx % 3], minSave: 5, traps: 4, bias: .45 };
+    const colIdx = Math.min(COLLECTIONS.length - 1, Math.floor((idx - 1) / 12));
+    const itemIdx = (idx - 1) % 12;
+    const col = COLLECTIONS[colIdx];
+    const base = Object.assign({}, CURVE[itemIdx]);
+    // Later collections start slightly richer while still having a gentle entry on piece 1-2
+    if (colIdx > 0 && itemIdx === 0) {
+      base.n = 6 + colIdx; base.c = 2 + (colIdx >= 2 ? 1 : 0); base.open = .65; base.slack = 1; base.minSave = 2; base.traps = 1;
+    } else if (colIdx > 0 && itemIdx === 1) {
+      base.n = 7 + colIdx; base.c = 3; base.sameOnly = false; base.open = .68; base.slack = 1; base.minSave = 2; base.traps = 1;
+    } else if (colIdx > 0) {
+      base.n = Math.min(16, base.n + Math.min(2, colIdx));
+    }
+    base.shape = col.shapes[itemIdx % col.shapes.length];
+    base.pool = col.colors;
+    return base;
   }
 
   function generate(P, seed) {
@@ -253,7 +376,8 @@
       if (e.cand) { if (cells[i].c[1] < cells[j].c[1]) { e.u = i; e.d = j; } else { e.u = j; e.d = i; } }
     }));
 
-    const pal = shuffle(PALETTE.slice(), rng).slice(0, P.c);
+    const pool = (P.pool || PALETTE).slice();
+    const pal = shuffle(pool, rng).slice(0, P.c);
     const target = assignColors(n, mirror, adj, P.c, P.bias, rng, pal);
     if (!target) return null;
 
@@ -295,14 +419,25 @@
     for (let step = 0; step < 5; step++) {
       for (let a = 0; a < 300; a++) {
         const lvl = generate(P, hash(idx * 7919 + 13, a + step * 1000));
-        if (lvl) { lvl.idx = idx; lvl.limit = lvl.min + P.slack; lvl.params = P; return lvl; }
+        if (lvl) {
+          const colIdx = Math.min(COLLECTIONS.length - 1, Math.floor((idx - 1) / 12));
+          const itemIdx = (idx - 1) % 12;
+          lvl.idx = idx;
+          lvl.colIdx = colIdx;
+          lvl.itemIdx = itemIdx;
+          lvl.collection = COLLECTIONS[colIdx];
+          lvl.pieceName = COLLECTIONS[colIdx].pieces[itemIdx] || ('Vitray ' + idx);
+          lvl.limit = lvl.min + P.slack;
+          lvl.params = P;
+          return lvl;
+        }
       }
       P = Object.assign({}, P, { minSave: Math.max(0, P.minSave - 1), traps: Math.max(0, P.traps - 1) });
     }
     throw new Error('Level generation failed for ' + idx);
   }
 
-  const api = { buildLevel, solveFrom, inside, centroid, params, PALETTE, W, H };
+  const api = { buildLevel, solveFrom, inside, centroid, params, COLLECTIONS, PALETTE, W, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SG = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon.svg">
-  <title>Stained Glass · Vitray Dökümü Prototipi</title>
+  <title>Stained Glass · Vitray Koleksiyonu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=Unbounded:wght@600;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
@@ -19,20 +19,27 @@
 <body>
   <div id="app">
     <header class="hud">
-      <button class="icon-btn" id="btnMenu" aria-label="Albüm ve ayarlar" title="Albüm ve ayarlar">☰</button>
-      <div class="title">
-        <div class="eyebrow" id="lvlEyebrow">Seviye 1</div>
-        <div class="title-row">
-          <button class="nav-btn" id="btnPrev" aria-label="Önceki seviye" title="Önceki seviye">‹</button>
-          <h1 id="lvlName">Chartres</h1>
-          <button class="nav-btn" id="btnNext" aria-label="Sonraki seviye" title="Sonraki seviye">›</button>
+      <button class="col-btn" id="btnMenu" aria-label="Koleksiyonlar ve ayarlar" title="Koleksiyon seç ve albümü görüntüle">
+        <span class="col-dot" id="colDot"></span>
+        <div class="col-btn-txt">
+          <small id="colEyebrow">KOLEKSİYON 1 · 0/12</small>
+          <strong id="colTitle">Gotik Katedraller ▾</strong>
         </div>
-      </div>
+      </button>
       <div class="goal" title="3 yıldız hedefi (en az döküm sayısı)">
         <span>★★★</span><b id="goalN">5</b>
       </div>
       <div class="pours" id="pours"><b id="poursN">5</b><span>DÖKÜM</span></div>
     </header>
+
+    <div class="piece-bar">
+      <button class="nav-btn" id="btnPrev" aria-label="Önceki vitray" title="Önceki vitray">‹</button>
+      <div class="piece-info">
+        <h1 id="lvlName">1. Chartres</h1>
+        <span id="lvlMeta">Yuvarlak kemer · 5 bölme</span>
+      </div>
+      <button class="nav-btn" id="btnNext" aria-label="Sonraki vitray" title="Sonraki vitray">›</button>
+    </div>
 
     <div id="tip" class="tip" hidden></div>
 
