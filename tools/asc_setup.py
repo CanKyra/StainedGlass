@@ -25,7 +25,12 @@ def token() -> str:
 
 
 def call(method: str, path: str, body=None):
-    url = path if path.startswith("http") else API + path
+    if path.startswith("http"):
+        url = path
+    elif path.startswith("/v2/"):
+        url = API[: -len("/v1")] + path
+    else:
+        url = API + path
     req = urllib.request.Request(url, method=method, data=json.dumps(body).encode() if body else None)
     req.add_header("Authorization", "Bearer " + token())
     req.add_header("Content-Type", "application/json")
