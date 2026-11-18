@@ -13,6 +13,10 @@
     p: { hex: '#9A4DE0', name: 'Mor', sym: '●' },
     o: { hex: '#F2771A', name: 'Turuncu', sym: '✖' },
     k: { hex: '#E8489A', name: 'Pembe', sym: '♥' },
+    t: { hex: '#14B8C4', name: 'Turkuaz', sym: '◐' },
+    w: { hex: '#EFE7D2', name: 'İnci', sym: '✚' },
+    m: { hex: '#A8174D', name: 'Bordo', sym: '▼' },
+    '*': { hex: '#DCE6F2', name: 'Prizma', sym: '✦' },
   };
   const HOT = [255, 238, 196];
   const SHAPE_NAMES = {
@@ -28,6 +32,39 @@
     crystal_diamond: 'Kristal prizma',
     tall_lancet: 'Kuzey kemeri',
     octagon_star: 'Kutup yıldızı',
+    hexagon: 'Bizans altıgeni',
+    apse: 'Apsis kemeri',
+    octagon: 'Sekizgen kubbe',
+    andalus_arch: 'Endülüs kemeri',
+    shamsa: 'Şemse madalyonu',
+    iwan: 'Pers eyvanı',
+    lantern: 'Kâğıt fener',
+    moon_gate: 'Ay kapısı',
+    sunburst: 'Güneş yelpazesi',
+    deco_gate: 'Deco kapısı',
+    lozenge: 'Baklava camı',
+    shield: 'Barok kalkan',
+    oeil: 'Boğa gözü',
+    comet: 'Kuyruklu yıldız',
+    astrolabe: 'Usturlap',
+    grand_rose: 'Büyük gül',
+  };
+  const NO_SILL = ['rose', 'oval_medallion', 'hex_medallion', 'crystal_diamond', 'octagon_star', 'hexagon', 'octagon', 'shamsa',
+    'lantern', 'lozenge', 'shield', 'oeil', 'comet', 'astrolabe', 'grand_rose'];
+  const SEAL_COLORS = ['#F5C542', '#7DD3FC', '#F9A8D4', '#86EFAC'];
+  const MECH_INFO = {
+    prism: {
+      icon: '✦', name: 'Prizma Cam',
+      text: 'Gökkuşağı işaretli bölme <b>her rengi kabul eder</b>. Üzerinden geçen cam rengini koruyarak akmaya devam eder, yani farklı bölmeleri tek dökümde birleştirebilirsin.',
+    },
+    lock: {
+      icon: '🔒', name: 'Mühürlü Bölme',
+      text: 'Mühürlü bölmeye <b>aynı harfli anahtar bölmesi dolana kadar</b> döküm yapılamaz. Mühür camı da durdurur, bu yüzden üstteki rengi mührü açmadan önce güvenle dökebilirsin.',
+    },
+    valve: {
+      icon: '⟳', name: 'Döner Kapak',
+      text: 'Turkuaz kapaklar <b>her dökümden sonra</b> açılıp kapanır. Kırmızı halka kapalı demektir ve cam geçemez. Dökümlerini kapağın ritmine göre sırala.',
+    },
   };
   const TIPS = {
     1: 'Potadan renk seçili! Aynı renk ipucunu taşıyan bölmelere peş peşe (veya aynı anda iki parmakla) dokun.',
@@ -49,6 +86,7 @@
       thumbs: s.thumbs || {},
       best: s.best || {},
       econ: s.econ || null,
+      seenMech: s.seenMech || {},
       settings: Object.assign({ cb: false, sound: true, preview: true }, s.settings || {}),
     };
   })();
@@ -109,6 +147,13 @@
     btnHomePiggy: $('#btnHomePiggy'),
     badgePiggy: $('#badgePiggy'),
     lblHomePiggy: $('#lblHomePiggy'),
+    btnMissions: $('#btnMissions'),
+    badgeMissions: $('#badgeMissions'),
+    btnTower: $('#btnTower'),
+    lblTower: $('#lblTower'),
+    btnAchievements: $('#btnAchievements'),
+    badgeAchievements: $('#badgeAchievements'),
+    btnHelp: $('#btnHelp'),
     // Collection Gallery elements
     starRoadCard: $('#starRoadCard'),
     colScreenGrid: $('#colScreenGrid'),
@@ -206,6 +251,11 @@
       if (!this.ok()) return; const t = this.ctx.currentTime;
       this.tone(150, t, 0.28, 'sawtooth', 0.06); this.tone(106, t + 0.07, 0.35, 'sawtooth', 0.06); this.noise(0.2, 3000, 0.15);
     },
+    unlock() {
+      if (!this.ok()) return; const t = this.ctx.currentTime;
+      this.tone(1174.66, t, 0.12, 'triangle', 0.08); this.tone(1760, t + 0.09, 0.32, 'sine', 0.08);
+    },
+    valve() { if (this.ok()) this.tone(260, this.ctx.currentTime + 0.05, 0.09, 'square', 0.025); },
     win() {
       if (!this.ok()) return; const t = this.ctx.currentTime;
       [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98].forEach((f, k) => {
@@ -241,18 +291,32 @@
   let currentScreen = 'home';
   let activeGalleryCol = 0;
 
+  function prepLevel(lvl) {
+    lvl.gap = {};
+    lvl.edges.forEach(e => { if (e.open) lvl.gap[e.u + '>' + e.d] = e; });
+    return lvl;
+  }
+
   function getLevel(idx) {
-    if (!levelCache.has(idx)) {
-      const lvl = G.buildLevel(idx);
-      lvl.gap = {};
-      lvl.edges.forEach(e => { if (e.open) lvl.gap[e.u + '>' + e.d] = e; });
-      levelCache.set(idx, lvl);
-    }
+    if (!levelCache.has(idx)) levelCache.set(idx, prepLevel(G.buildLevel(idx)));
     return levelCache.get(idx);
   }
 
-  let L = null, S = null;
-  const R = { cells: [], preview: null, fx: null, solderG: null };
+  const currentLevelIdx = () => Math.min(MAX_LEVEL, Math.max(1, store.unlocked));
+  const isLevelOpen = idx => idx <= store.unlocked;
+  const towerOpen = () => store.unlocked > EMod.CONFIG.towerUnlockLevel;
+  const campaignDone = () => store.unlocked > MAX_LEVEL;
+
+  function mechsOf(lvl) {
+    const out = [];
+    if (lvl.target.includes(G.WILD)) out.push('prism');
+    if (lvl.lockKey && lvl.lockKey.some(k => k >= 0)) out.push('lock');
+    if (lvl.valves && Object.keys(lvl.valves).length) out.push('valve');
+    return out;
+  }
+
+  let L = null, S = null, lastWin = null;
+  const R = { cells: [], preview: null, fx: null, solderG: null, seals: [] };
   const anims = []; let rafOn = false;
   let evalTimers = [];
 
@@ -263,6 +327,22 @@
 
   function activeDown() {
     return L.down.map((arr, u) => arr.filter(d => !S.soldered.has(u + '>' + d)));
+  }
+
+  const isSealed = i => !!L.lockKey && L.lockKey[i] >= 0 && S.fill[L.lockKey[i]] == null;
+  const valveOpen = (u, d) => {
+    const ph = L.valves ? L.valves[u + '>' + d] : null;
+    return ph == null || ph === S.used % 2;
+  };
+  const rightColor = (i, v) => L.target[i] === G.WILD || L.target[i] === v;
+
+  // Best continuation from the exact board the player is looking at
+  function solveNow() {
+    let mask = 0; S.fill.forEach((v, i) => { if (v != null) mask |= 1 << i; });
+    return G.solveAdv({
+      n: L.cells.length, down: activeDown(), target: L.target, palette: L.palette,
+      lockKey: L.lockKey || null, valves: L.valves || null,
+    }, mask, S.used % 2);
   }
 
   function totalStars() {
@@ -302,7 +382,7 @@
 
     const inGame = scr === 'game';
     E.btnHome.hidden = scr === 'home';
-    E.btnHome.classList.toggle('icon-only', inGame);
+    E.btnHome.classList.add('icon-only');
     E.btnStars.hidden = inGame;
     E.btnMenu.hidden = !inGame;
     E.hudSpacer.hidden = inGame;
@@ -318,11 +398,14 @@
   function updateTopBar() {
     const tot = totalStars();
     const claimableChests = econ.claimableStarChests(tot);
-    E.starsTotalN.textContent = `${tot}/${MAX_STARS}`;
+    E.starsTotalN.textContent = currentScreen === 'home' ? `${tot}/${MAX_STARS}` : `${tot}`;
     E.starBadge.hidden = claimableChests.length === 0;
     E.streakN.textContent = econ.d.streak || 0;
     E.btnStreak.classList.toggle('hot', (econ.d.streak || 0) >= 1);
-    E.coinsN.textContent = econ.d.coins.toLocaleString('tr-TR');
+    const coins = econ.d.coins;
+    E.coinsN.textContent = coins >= 10000
+      ? `${(Math.floor(coins / 100) / 10).toLocaleString('tr-TR')}B`
+      : coins.toLocaleString('tr-TR');
   }
 
   function goHome() {
@@ -334,7 +417,7 @@
 
   function refreshHome() {
     updateTopBar();
-    const curIdx = Math.min(MAX_LEVEL, Math.max(1, store.unlocked));
+    const curIdx = currentLevelIdx();
     const curLvl = getLevel(curIdx);
     const col = curLvl.collection;
     const st = colStats(curLvl.colIdx);
@@ -356,8 +439,13 @@
       ? `${streak} Kazanma Serisi Aktif · Her bölüme +1 ekstra dökümle başlıyorsun!`
       : `Usta Ateşi Serisi: ${streak}/3 · 3 seride +1 ekstra döküm hakkı bedava!`;
 
-    E.homePlayMain.textContent = `▶ OYNA · SEVİYE ${curIdx}`;
-    E.homePlaySub.textContent = `${curLvl.pieceName} · ${col.title}`;
+    if (campaignDone()) {
+      E.homePlayMain.textContent = `🗼 USTA KULESİ · KAT ${econ.d.towerFloor}`;
+      E.homePlaySub.textContent = 'Tüm koleksiyonlar tamam, kulede yüksel!';
+    } else {
+      E.homePlayMain.textContent = `▶ OYNA · SEVİYE ${curIdx}`;
+      E.homePlaySub.textContent = `${curLvl.pieceName} · ${col.title}`;
+    }
 
     // Dock badges
     const today = EMod.localToday();
@@ -372,14 +460,44 @@
     const piggyReady = econ.d.piggy >= EMod.CONFIG.piggyMinBreak;
     E.badgePiggy.hidden = !piggyReady;
     E.lblHomePiggy.textContent = `Kumbara (${econ.d.piggy})`;
+
+    econ.ensureMissions(towerOpen(), today);
+    const missionCount = econ.missionClaimableCount(today);
+    E.badgeMissions.hidden = missionCount === 0;
+    E.badgeMissions.textContent = missionCount;
+    const metrics = achMetrics();
+    const achCount = EMod.ACHIEVEMENTS.filter(a => econ.achievementReady(a, metrics)).length;
+    E.badgeAchievements.hidden = achCount === 0;
+    E.badgeAchievements.textContent = achCount;
+    E.btnTower.classList.toggle('locked', !towerOpen());
+    E.lblTower.textContent = towerOpen() ? `Kule · Kat ${econ.d.towerFloor}` : 'Usta Kulesi 🔒';
+  }
+
+  function achMetrics() {
+    const st = econ.d.stats;
+    let perfect = 0, cols = 0, masters = 0;
+    for (const k in store.stars) if (store.stars[k] === 3) perfect++;
+    G.COLLECTIONS.forEach((c, i) => {
+      const cs = colStats(i);
+      if (cs.done === 12) cols++;
+      if (cs.stars === 36) masters++;
+    });
+    return {
+      solved: Object.keys(store.thumbs).length, stars: totalStars(), perfect, cols, masters,
+      clean: st.clean || 0, chain: st.maxChain || 0, streak: st.maxStreak || 0, cells: st.cells || 0,
+      missions: st.missions || 0, daily: econ.d.puzzleBest || 0, tower: econ.d.towerBest || 0,
+    };
+  }
+
+  function noteMission(type, amount) {
+    econ.bumpMission(type, amount).forEach(m => toast(`📜 Görev tamamlandı: ${m.text}`));
   }
 
   // ---------- Collection Gallery Screen ----------
   function goCollections(colIdx) {
     closeModal();
     if (typeof colIdx !== 'number') {
-      const curIdx = Math.min(MAX_LEVEL, Math.max(1, store.unlocked));
-      colIdx = Math.min(G.COLLECTIONS.length - 1, Math.floor((curIdx - 1) / 12));
+      colIdx = Math.min(G.COLLECTIONS.length - 1, Math.floor((currentLevelIdx() - 1) / 12));
     }
     activeGalleryCol = colIdx;
     setScreen('collections');
@@ -433,10 +551,11 @@
     E.colScreenGrid.innerHTML = G.COLLECTIONS.map((c, idx) => {
       const st = colStats(idx);
       const pct = Math.round((st.done / 12) * 100);
-      return `<button class="col-card ${idx === activeGalleryCol ? 'active' : ''}" data-c="${idx}">
+      const open = isLevelOpen(idx * 12 + 1);
+      return `<button class="col-card ${idx === activeGalleryCol ? 'active' : ''} ${open ? '' : 'locked'}" data-c="${idx}">
         <div class="col-card-top">
           <span class="col-card-tag" style="color:${c.accent}">Koleksiyon ${c.num}</span>
-          <span class="col-card-cnt">${st.done}/12 · ★${st.stars}</span>
+          <span class="col-card-cnt">${open ? `${st.done}/12 · ★${st.stars}` : '🔒'}</span>
         </div>
         <strong>${c.title}</strong>
         <div class="col-card-bar"><span style="width:${pct}%;background:${c.accent}"></span></div>
@@ -450,6 +569,8 @@
         renderCollectionScreen();
       };
     });
+    const activeCard = E.colScreenGrid.querySelector('.col-card.active');
+    if (activeCard) E.colScreenGrid.scrollLeft = activeCard.offsetLeft - E.colScreenGrid.offsetLeft - (E.colScreenGrid.clientWidth - activeCard.offsetWidth) / 2;
 
     // 3. Active Collection 12-Piece Showcase
     const activeSt = colStats(activeGalleryCol);
@@ -458,13 +579,9 @@
       <small>${activeCol.subtitle}</small>`;
 
     const startIdx = activeGalleryCol * 12 + 1;
-    let nextInCol = startIdx;
     let slots = '';
     for (let k = 0; k < 12; k++) {
       const lvIdx = startIdx + k;
-      if (!store.thumbs[lvIdx] && nextInCol === startIdx && k > 0 && store.thumbs[lvIdx - 1]) {
-        nextInCol = lvIdx;
-      }
       const isCur = lvIdx === Math.min(MAX_LEVEL, store.unlocked);
       const curCls = isCur ? ' cur' : '';
       const pieceName = activeCol.pieces[k];
@@ -473,6 +590,11 @@
         slots += `<button class="slot${curCls}" data-l="${lvIdx}" aria-label="${pieceName}">
           ${store.thumbs[lvIdx]}
           <span class="s">${'★'.repeat(st)}${'☆'.repeat(3 - st)}</span>
+          <span class="n">${k + 1}. ${pieceName}</span>
+        </button>`;
+      } else if (!isLevelOpen(lvIdx)) {
+        slots += `<button class="slot locked" data-locked="${lvIdx}" aria-label="${pieceName} kilitli">
+          <span class="slot-lock">🔒</span>
           <span class="n">${k + 1}. ${pieceName}</span>
         </button>`;
       } else {
@@ -487,11 +609,12 @@
     E.colScreenAlbum.innerHTML = slots;
     E.colScreenAlbum.querySelectorAll('[data-l]').forEach(b => {
       b.onclick = () => {
-        const lv = +b.dataset.l;
-        store.unlocked = Math.max(store.unlocked, lv); save();
         Snd.init(); Snd.click();
-        startLevel(lv);
+        startLevel(+b.dataset.l);
       };
+    });
+    E.colScreenAlbum.querySelectorAll('[data-locked]').forEach(b => {
+      b.onclick = () => toast(`🔒 Önce Seviye ${currentLevelIdx()} vitrayını tamamla`);
     });
 
     // Find first unsolved in this collection (or first level of collection if all solved)
@@ -499,8 +622,9 @@
     for (let k = 0; k < 12; k++) {
       if (!store.thumbs[startIdx + k]) { targetLv = startIdx + k; break; }
     }
+    if (!isLevelOpen(targetLv)) targetLv = currentLevelIdx();
     const targetObj = getLevel(targetLv);
-    E.colPlayMain.textContent = `▶ SEVİYE ${targetLv} · ${targetObj.pieceName.toUpperCase()}`;
+    E.colPlayMain.textContent = `▶ SEVİYE ${targetLv} · ${targetObj.pieceName.toLocaleUpperCase('tr-TR')}`;
     E.btnColPlay.onclick = () => {
       Snd.init(); Snd.click();
       startLevel(targetLv);
@@ -509,29 +633,43 @@
 
   // ---------- Start Campaign Level or Daily Puzzle ----------
   function startLevel(idx) {
-    idx = Math.max(1, Math.min(MAX_LEVEL, idx));
+    idx = Math.max(1, Math.min(currentLevelIdx(), idx));
     clearEvalTimers();
     L = getLevel(idx);
-    initPlaySession(L, false);
+    initPlaySession(L, 'level');
     try { history.replaceState(null, '', '?level=' + idx); } catch (e) { /* ignore */ }
   }
 
   function startDailyPuzzle() {
     clearEvalTimers();
     const today = EMod.localToday();
-    const dl = G.buildDailyLevel(today);
-    dl.gap = {};
-    dl.edges.forEach(e => { if (e.open) dl.gap[e.u + '>' + e.d] = e; });
-    L = dl;
-    initPlaySession(L, true);
+    L = prepLevel(G.buildDailyLevel(today));
+    initPlaySession(L, 'daily');
     try { history.replaceState(null, '', '?puzzle=1'); } catch (e) { /* ignore */ }
   }
 
-  function initPlaySession(lvl, isDaily) {
+  function startTower() {
+    clearEvalTimers();
+    L = prepLevel(G.buildTowerLevel(econ.d.towerFloor || 1));
+    initPlaySession(L, 'tower');
+    try { history.replaceState(null, '', '?tower=1'); } catch (e) { /* ignore */ }
+  }
+
+  function restartCurrent() {
+    if (S.mode === 'daily') startDailyPuzzle();
+    else if (S.mode === 'tower') startTower();
+    else startLevel(S.idx);
+  }
+
+  function initPlaySession(lvl, mode) {
     const bonusPours = econ.extraStartPours();
+    const isDaily = mode === 'daily';
+    lastWin = null;
     S = {
-      idx: lvl.idx || 0,
-      isDaily: !!isDaily,
+      idx: mode === 'level' ? lvl.idx : 0,
+      mode,
+      isDaily,
+      assisted: false,
       fill: Array(lvl.cells.length).fill(null),
       pours: lvl.limit + bonusPours,
       bonusPours,
@@ -559,7 +697,26 @@
     hideSheet();
     closeModal();
     E.rays.innerHTML = '';
-    if (!isDaily && TIPS[S.idx]) { E.tip.innerHTML = TIPS[S.idx]; E.tip.hidden = false; } else E.tip.hidden = true;
+    if (mode === 'level' && TIPS[S.idx]) { E.tip.innerHTML = TIPS[S.idx]; E.tip.hidden = false; } else E.tip.hidden = true;
+    const unseen = mechsOf(lvl).filter(m => !store.seenMech[m]);
+    if (unseen.length) showMechIntro(unseen);
+  }
+
+  function showMechIntro(list) {
+    const key = list[0], info = MECH_INFO[key];
+    store.seenMech[key] = true; save();
+    E.modal.innerHTML = `<div class="card mech-card">
+      <div class="eyebrow">YENİ TEKNİK</div>
+      <h2>${info.name}</h2>
+      <div class="mech-ico">${info.icon}</div>
+      <p>${info.text}</p>
+      <div class="row"><button class="btn primary" data-a="ok">${list.length > 1 ? 'Devam ▶' : 'Anladım'}</button></div>
+    </div>`;
+    E.modal.hidden = false;
+    E.modal.querySelector('[data-a=ok]').onclick = () => {
+      Snd.init(); Snd.click();
+      if (list.length > 1) showMechIntro(list.slice(1)); else closeModal();
+    };
   }
 
   // ---------- board ----------
@@ -575,14 +732,15 @@
       '<linearGradient id="sheenG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".32"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>' +
       '<radialGradient id="emptyG" cx=".5" cy=".38" r=".75"><stop offset="0" stop-color="#3a3158"/><stop offset="1" stop-color="#1f1933"/></radialGradient>' +
       '<linearGradient id="sweepG" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff6dc" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
-      '<radialGradient id="haloG"><stop offset="0" stop-color="#ffe6a8" stop-opacity=".5"/><stop offset=".6" stop-color="#ffd27a" stop-opacity=".12"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>');
+      '<radialGradient id="haloG"><stop offset="0" stop-color="#ffe6a8" stop-opacity=".5"/><stop offset=".6" stop-color="#ffd27a" stop-opacity=".12"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="prismG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6b6b"/><stop offset=".25" stop-color="#ffd93d"/><stop offset=".5" stop-color="#6bcb77"/><stop offset=".75" stop-color="#4d96ff"/><stop offset="1" stop-color="#c77dff"/></linearGradient>' +
+      '<pattern id="lockHatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#0d0a18" fill-opacity=".45"/><rect width="4" height="12" fill="#8f86b5" fill-opacity=".28"/></pattern>');
 
     el('ellipse', { cx: 200, cy: 280, rx: 300, ry: 340, fill: 'url(#haloG)', class: 'halo-bg' }, svg);
     el('polygon', { points: P(L.shape), class: 'frame1' }, svg);
     el('polygon', { points: P(L.shape), class: 'frame2' }, svg);
     el('polygon', { points: P(L.shape), class: 'frame3' }, svg);
-    const noSill = ['rose', 'oval_medallion', 'hex_medallion', 'crystal_diamond', 'octagon_star'];
-    if (!noSill.includes(L.shapeType)) {
+    if (!NO_SILL.includes(L.shapeType)) {
       const xs = L.shape.map(p => p[0]), by = Math.max(...L.shape.map(p => p[1]));
       el('rect', { x: Math.min(...xs) - 26, y: by + 10, width: Math.max(...xs) - Math.min(...xs) + 52, height: 14, rx: 3, class: 'sill' }, svg);
     }
@@ -591,17 +749,21 @@
     R.cells = L.cells.map((c, i) => {
       const g = el('g', { class: 'cell' }, cg);
       el('polygon', { points: P(c.poly), fill: 'url(#emptyG)' }, g);
+      const isPrism = L.target[i] === G.WILD;
+      if (isPrism) el('polygon', { points: P(c.poly), fill: 'url(#prismG)', class: 'prism-tint' }, g);
       const clip = el('g', { 'clip-path': `url(#cc${i})`, class: 'molten-c' }, g);
       const molten = el('circle', { cx: c.c[0], cy: c.c[1], r: 0 }, clip);
       el('polygon', { points: P(c.poly), fill: 'url(#sheenG)', class: 'sheen' }, g);
       const col = COLORS[L.target[i]];
       const fsym = el('text', { x: c.c[0], y: c.c[1] + 1, class: 'fill-sym', 'text-anchor': 'middle', 'dominant-baseline': 'central' }, g);
       fsym.textContent = col.sym;
+      if (L.lockKey && L.lockKey[i] >= 0) el('polygon', { points: P(c.poly), fill: 'url(#lockHatch)', class: 'lock-shade' }, g);
       const hint = el('g', { class: 'hint', transform: `translate(${c.c[0].toFixed(1)} ${c.c[1].toFixed(1)})` }, g);
       el('circle', { r: 13, class: 'hint-ring' }, hint);
-      el('circle', { r: 9, fill: col.hex }, hint);
+      el('circle', { r: 9, fill: isPrism ? 'url(#prismG)' : col.hex }, hint);
       const hs = el('text', { y: 0.5, class: 'hint-sym', 'text-anchor': 'middle', 'dominant-baseline': 'central' }, hint);
       hs.textContent = col.sym;
+      if (L.target[i] === 'm') hs.style.fill = '#fff';
       const crack = el('g', { class: 'crack' }, g);
       return { g, molten, hint, crack };
     });
@@ -632,9 +794,44 @@
       const gg = el('g', { transform: `translate(${mid[0].toFixed(1)} ${mid[1].toFixed(1)})` }, lg);
       const g = el('g', { class: 'gap', transform: `rotate(${ang.toFixed(1)})` }, gg);
       el('circle', { r: 8, class: 'gh' }, g);
+      if (e.valve != null) {
+        g.classList.add('valve');
+        el('circle', { r: 10.5, class: 'v-ring' }, g);
+        el('line', { x1: -7.5, y1: 0, x2: 7.5, y2: 0, class: 'v-bar' }, g);
+      }
       el('path', { d: 'M-4.5 -2.5 L0 2.5 L4.5 -2.5' }, g);
       e.marker = g;
     });
+
+    // Seal and key badges
+    R.seals = [];
+    if (L.lockKey) {
+      const sg = el('g', { id: 'seals' }, svg);
+      const keys = [...new Set(L.lockKey.filter(k => k >= 0))];
+      keys.forEach((k, gi) => {
+        const color = SEAL_COLORS[gi % SEAL_COLORS.length], letter = String.fromCharCode(65 + gi);
+        L.lockKey.forEach((kk, x) => {
+          if (kk !== k) return;
+          const c = L.cells[x].c;
+          const b = el('g', { class: 'seal-badge', transform: `translate(${c[0].toFixed(1)} ${(c[1] - 24).toFixed(1)})` }, sg);
+          const inner = el('g', { class: 'seal-in' }, b);
+          el('path', { d: 'M-5 -6 V-10 A5 5 0 0 1 5 -10 V-6', class: 'seal-shackle', stroke: color }, inner);
+          el('rect', { x: -9, y: -7, width: 18, height: 15, rx: 3.5, class: 'seal-plate', stroke: color }, inner).style.fill = color;
+          const t = el('text', { x: 0, y: 1, class: 'seal-letter', 'text-anchor': 'middle', 'dominant-baseline': 'central' }, inner);
+          t.textContent = letter;
+          R.seals.push({ g: b, key: k, cell: x });
+        });
+        const c = L.cells[k].c;
+        const b = el('g', { class: 'seal-badge', transform: `translate(${c[0].toFixed(1)} ${(c[1] + 25).toFixed(1)})` }, sg);
+        const inner = el('g', { class: 'seal-in' }, b);
+        el('rect', { x: -17, y: -9, width: 34, height: 18, rx: 9, class: 'seal-plate', stroke: color }, inner);
+        el('circle', { cx: -9, cy: 0, r: 3.6, class: 'seal-key', stroke: color }, inner);
+        el('path', { d: 'M-5.4 0 H3 M0 0 V3.4 M3 0 V3.4', class: 'seal-key', stroke: color }, inner);
+        const t = el('text', { x: 10, y: 0.5, class: 'seal-key-letter', fill: color, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, inner);
+        t.textContent = letter;
+        R.seals.push({ g: b, key: k, cell: null });
+      });
+    }
 
     R.fx = el('g', { id: 'fx', 'clip-path': 'url(#winClip)' }, svg);
     const hg = el('g', { id: 'hit' }, svg);
@@ -653,12 +850,22 @@
       const isSoldered = S.soldered.has(key);
       e.marker.classList.toggle('soldered', isSoldered);
       e.marker.classList.toggle('sealed', !isSoldered && (S.fill[e.d] != null || S.fill[e.u] != null));
+      if (e.valve != null) {
+        const on = e.valve === S.used % 2;
+        e.marker.classList.toggle('vopen', on);
+        e.marker.classList.toggle('vshut', !on);
+      }
       if (isSoldered) sd += seg(lerp(e.a, e.b, 0.26), lerp(e.a, e.b, 0.74));
     });
     if (sd) {
       el('path', { d: sd, class: 'solder-bar-o' }, R.solderG);
       el('path', { d: sd, class: 'solder-bar-i' }, R.solderG);
     }
+    R.seals.forEach(b => {
+      const open = S.fill[b.key] != null;
+      b.g.classList.toggle('gone', open);
+      if (b.cell != null) R.cells[b.cell].g.classList.toggle('locked', !open && S.fill[b.cell] == null);
+    });
   }
 
   function floodInfo(i, pt) {
@@ -670,6 +877,7 @@
       const f = res[q];
       for (const j of down[f.c]) {
         if (seen.has(j) || S.fill[j] != null) continue;
+        if (isSealed(j) || !valveOpen(f.c, j)) continue;
         seen.add(j);
         const e = L.gap[f.c + '>' + j];
         res.push({ c: j, d: f.d + 1, from: e.mid, via: e });
@@ -683,7 +891,7 @@
     S.hover = i;
     R.preview.innerHTML = '';
     L.edges.forEach(e => e.marker && e.marker.classList.remove('pv-flow'));
-    if (i < 0 || !S.selected || S.soldering || S.status !== 'play' || S.fill[i] != null) return;
+    if (i < 0 || !S.selected || S.soldering || S.status !== 'play' || S.fill[i] != null || isSealed(i)) return;
     const fl = store.settings.preview ? floodInfo(i) : [{ c: i }];
     fl.forEach(f => {
       el('polygon', { points: P(L.cells[f.c].poly), class: 'pv' + (S.cooling ? ' single' : ''), fill: COLORS[S.selected].hex }, R.preview);
@@ -755,6 +963,12 @@
   function tapCell(i, pt) {
     if (S.status !== 'play') return;
     if (S.fill[i] != null) return;
+    if (isSealed(i)) {
+      toast('🔒 Bu bölme mühürlü. Önce aynı harfli anahtar bölmesini doldur');
+      Snd.wrong(); vibrate(20);
+      E.board.classList.remove('shake'); void E.board.getBoundingClientRect(); E.board.classList.add('shake');
+      return;
+    }
     if (!S.selected) {
       toast('Önce aşağıdan bir pota seç');
       E.pots.classList.remove('nudge'); void E.pots.offsetWidth; E.pots.classList.add('nudge');
@@ -778,9 +992,12 @@
     S.history.push(snapshot());
     const fl = floodInfo(i, pt);
     const col = S.selected;
+    const sealedBefore = L.lockKey ? L.cells.map((c, x) => isSealed(x)) : null;
     if (S.cooling) { S.cooling = false; E.board.classList.remove('cooling'); }
     S.pours--; S.used++;
     fl.forEach(f => { S.fill[f.c] = col; });
+    if (sealedBefore && sealedBefore.some((was, x) => was && !isSealed(x))) setTimeout(() => Snd.unlock(), 200);
+    if (L.valves) Snd.valve();
     clearHintRing();
     updateGaps();
     updateHUD();
@@ -844,7 +1061,7 @@
         rc.molten.setAttribute('cx', c.c[0]); rc.molten.setAttribute('cy', c.c[1]);
         rc.molten.setAttribute('r', 400); rc.molten.setAttribute('fill', COLORS[v].hex);
         rc.g.classList.add('filled');
-        if (v !== L.target[i]) markWrong([i]);
+        if (!rightColor(i, v)) markWrong([i]);
       } else {
         rc.molten.setAttribute('r', 0); rc.g.classList.remove('filled');
       }
@@ -872,7 +1089,7 @@
   }
 
   function evaluateAfterPour(fl, maxEnd) {
-    const wrongEntries = fl.filter(f => S.fill[f.c] !== L.target[f.c]);
+    const wrongEntries = fl.filter(f => !rightColor(f.c, S.fill[f.c]));
     if (wrongEntries.length) {
       S.status = 'wrong';
       const firstVia = wrongEntries.find(f => f.via);
@@ -887,6 +1104,10 @@
       evalTimers.push(t);
       return;
     }
+    econ.d.stats.cells = (econ.d.stats.cells || 0) + fl.length;
+    econ.d.stats.maxChain = Math.max(econ.d.stats.maxChain || 0, fl.length);
+    noteMission('cells', fl.length);
+    if (fl.length >= 3) noteMission('chain', 1);
     if (S.fill.every(v => v != null)) {
       S.status = 'win';
       updateBoosters();
@@ -939,18 +1160,18 @@
     const st = colStats(L.colIdx);
     E.colDot.style.background = col.accent;
     E.colDot.style.boxShadow = `0 0 10px ${col.accent}`;
-    E.colEyebrow.textContent = S.isDaily ? 'GÜNLÜK ÖZEL VİTRAY' : `KOLEKSİYON ${col.num} · ${st.done}/12`;
+    E.colEyebrow.textContent = S.isDaily ? 'GÜNLÜK ÖZEL VİTRAY' : S.mode === 'tower' ? `USTA KULESİ · EN İYİ ${econ.d.towerBest || 0}` : `KOLEKSİYON ${col.num} · ${st.done}/12`;
     E.colTitle.textContent = `${col.title} ▾`;
-    E.lvlName.textContent = S.isDaily ? `📅 ${L.pieceName}` : `${L.itemIdx + 1}. ${L.pieceName}`;
+    E.lvlName.textContent = S.isDaily ? `📅 ${L.pieceName}` : S.mode === 'tower' ? `🗼 ${L.pieceName}` : `${L.itemIdx + 1}. ${L.pieceName}`;
     E.lvlMeta.textContent = `${SHAPE_NAMES[L.shapeType] || 'Vitray'} · ${L.cells.length} bölme` + (S.bonusPours ? ' · 🔥+1 Döküm' : '');
     E.poursN.textContent = S.pours;
     E.goalN.textContent = L.min;
     E.pours.classList.toggle('low', S.pours <= 2);
     E.pours.classList.toggle('bonus', S.bonusPours > 0 && S.pours > 2);
-    E.btnPrev.hidden = S.isDaily;
-    E.btnNext.hidden = S.isDaily;
+    E.btnPrev.hidden = S.mode !== 'level';
+    E.btnNext.hidden = S.mode !== 'level';
     E.btnPrev.disabled = S.idx <= 1;
-    E.btnNext.disabled = S.idx >= MAX_LEVEL;
+    E.btnNext.disabled = S.idx >= MAX_LEVEL || !isLevelOpen(S.idx + 1);
   }
 
   function setBadge(elEm, k) {
@@ -981,13 +1202,14 @@
   }
 
   function ensureBoosterOrPrompt(k, onReady) {
+    const ready = () => { if (S) S.assisted = true; onReady(); };
     if (econ.hasBooster(k)) {
       econ.useBooster(k);
       updateBoosters();
-      onReady();
+      ready();
       return;
     }
-    showBoosterBuySheet(k, onReady);
+    showBoosterBuySheet(k, ready);
   }
 
   function showBoosterBuySheet(k, onReady) {
@@ -1046,20 +1268,22 @@
   E.homeColCard.addEventListener('click', () => { Snd.init(); Snd.click(); goCollections(); });
   E.btnHomePlay.addEventListener('click', () => {
     Snd.init(); Snd.click();
-    const curIdx = Math.min(MAX_LEVEL, Math.max(1, store.unlocked));
-    startLevel(curIdx);
+    if (campaignDone()) openTower(); else startLevel(currentLevelIdx());
   });
+  E.btnMissions.addEventListener('click', () => { Snd.init(); Snd.click(); openMissions(); });
+  E.btnTower.addEventListener('click', () => { Snd.init(); Snd.click(); openTower(); });
+  E.btnAchievements.addEventListener('click', () => { Snd.init(); Snd.click(); openAchievements(); });
+  E.btnHelp.addEventListener('click', () => { Snd.init(); Snd.click(); openHelp(); });
   E.btnDailyReward.addEventListener('click', () => { Snd.init(); Snd.click(); openDailyReward(); });
   E.btnDailyPuzzle.addEventListener('click', () => { Snd.init(); Snd.click(); startDailyPuzzle(); });
   E.btnHomeGallery.addEventListener('click', () => { Snd.init(); Snd.click(); goCollections(); });
   E.btnHomePiggy.addEventListener('click', () => { Snd.init(); Snd.click(); openShop(); });
 
   // Gameplay controls
-  E.btnPrev.addEventListener('click', () => { if (S && !S.isDaily && S.idx > 1) { Snd.init(); Snd.click(); startLevel(S.idx - 1); } });
+  E.btnPrev.addEventListener('click', () => { if (S && S.mode === 'level' && S.idx > 1) { Snd.init(); Snd.click(); startLevel(S.idx - 1); } });
   E.btnNext.addEventListener('click', () => {
-    if (S && !S.isDaily && S.idx < MAX_LEVEL) {
+    if (S && S.mode === 'level' && S.idx < MAX_LEVEL && isLevelOpen(S.idx + 1)) {
       Snd.init(); Snd.click();
-      store.unlocked = Math.max(store.unlocked, S.idx + 1); save();
       startLevel(S.idx + 1);
     }
   });
@@ -1136,8 +1360,8 @@
   E.bRestart.addEventListener('click', () => {
     if (!S) return;
     Snd.init(); Snd.click();
-    if (!S.isDaily && S.used > 0 && econ.d.streak > 0) econ.onLevelFailReset();
-    if (S.isDaily) startDailyPuzzle(); else startLevel(S.idx);
+    if (S.mode === 'level' && S.used > 0 && econ.d.streak > 0) econ.onLevelFailReset();
+    restartCurrent();
   });
   E.tip.addEventListener('click', () => { E.tip.hidden = true; });
 
@@ -1168,12 +1392,11 @@
 
   function clearHintRing() { if (S && S.hintRing) { S.hintRing.remove(); S.hintRing = null; } }
   function applyHint() {
-    let mask = 0; S.fill.forEach((v, i) => { if (v != null) mask |= 1 << i; });
-    const r = G.solveFrom(L.cells.length, activeDown(), L.target, mask);
+    const r = solveNow();
     if (!r) { toast('Bu durumdan çözüm yok, geri al'); return; }
     if (r.min > S.pours) toast(`Kalan hakla yetişmez: ${r.min} döküm gerekli`);
     const c = r.first;
-    selectPot(L.target[c]);
+    selectPot(r.col);
     clearHintRing();
     const cc = L.cells[c].c;
     S.hintRing = el('circle', { cx: cc[0], cy: cc[1], r: 22, class: 'hint-target' }, R.fx);
@@ -1208,7 +1431,7 @@
   // ---------- Pinch-Point Sheets (wrong / out) ----------
   function showSheet(kind) {
     const streak = econ.d.streak || 0;
-    const streakBanner = (!S.isDaily && streak > 0)
+    const streakBanner = (S.mode === 'level' && streak > 0)
       ? `<div class="streak-warn"><span>🔥</span><span><b>${streak} Kazanma Serin</b> tehlikede! Devam edersen serin korunur.</span></div>`
       : '';
 
@@ -1246,6 +1469,7 @@
     E.sheet.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
       const a = b.dataset.a;
       Snd.init();
+      if (a !== 'restart') S.assisted = true;
       if (a === 'repair') {
         if (econ.hasBooster('undo')) {
           econ.useBooster('undo');
@@ -1291,8 +1515,8 @@
           toast('+1 Döküm eklendi!');
         });
       } else if (a === 'restart') {
-        if (!S.isDaily) econ.onLevelFailReset();
-        if (S.isDaily) startDailyPuzzle(); else startLevel(S.idx);
+        if (S.mode === 'level') econ.onLevelFailReset();
+        restartCurrent();
       }
     }));
   }
@@ -1314,15 +1538,21 @@
         piggyAdded: dRes.piggyAdded,
         piggyTotal: dRes.piggyTotal,
         isDaily: true,
+        alreadyDone: dRes.alreadyDone,
       };
+      if (!dRes.alreadyDone) noteMission('daily', 1);
+    } else if (S.mode === 'tower') {
+      winInfo = econ.onTowerWin({ floor: L.floor, stars });
+      noteMission('tower', 1);
     } else {
       const isFirstWin = !store.thumbs[S.idx];
+      const newStars = Math.max(0, stars - (store.stars[S.idx] || 0));
       store.stars[S.idx] = Math.max(store.stars[S.idx] || 0, stars);
       store.best[S.idx] = Math.min(store.best[S.idx] || 99, S.used);
       store.unlocked = Math.max(store.unlocked, S.idx + 1);
       store.thumbs[S.idx] = thumbSVG(L);
 
-      winInfo = econ.onLevelWin({ stars, isFirstWin });
+      winInfo = econ.onLevelWin({ stars, isFirstWin, newStars });
 
       const st = colStats(L.colIdx);
       if (st.done === 12 && !econ.d.claimedCols[L.colIdx]) {
@@ -1339,6 +1569,16 @@
       }
     }
 
+    if (!S.assisted) econ.d.stats.clean = (econ.d.stats.clean || 0) + 1;
+    noteMission('win', 1);
+    if (stars === 3) noteMission('star3', 1);
+    if (!S.assisted) noteMission('clean', 1);
+    const freshAch = econ.takeNewAchievements(achMetrics());
+    if (freshAch.length) {
+      const tt = setTimeout(() => toast(`🏆 Başarım açıldı: ${freshAch[0].name}${freshAch.length > 1 ? ` +${freshAch.length - 1}` : ''}`), 1500);
+      evalTimers.push(tt);
+    }
+
     save();
     updateHUD();
     updateBoosters();
@@ -1352,8 +1592,20 @@
     }
     castRays();
     Snd.win(); vibrate([18, 45, 18, 45]);
-    const t = setTimeout(() => showWin(stars, winInfo, colChestBonus), 680);
+    lastWin = { stars, winInfo, colChestBonus, doubled: false };
+    const t = setTimeout(() => showWin(), 680);
     evalTimers.push(t);
+  }
+
+  function advanceAfterWin() {
+    if (S.mode === 'daily') { goHome(); return; }
+    const go = () => {
+      if (S.mode === 'tower') startTower();
+      else if (S.idx >= MAX_LEVEL) { goHome(); openTower(); }
+      else startLevel(S.idx + 1);
+    };
+    if (econ.shouldShowInterstitial(S.mode === 'tower' ? store.unlocked : S.idx)) playAd('Geçiş Reklamı', go);
+    else go();
   }
 
   function castRays() {
@@ -1382,73 +1634,248 @@
     }
   }
 
-  function showWin(stars, winInfo, colChestBonus) {
-    if (!S || S.status !== 'win') return;
-    winInfo = winInfo || { totalEarned: 25, streak: econ.d.streak || 1, piggyAdded: 60, piggyTotal: econ.d.piggy };
+  function showWin() {
+    if (!S || S.status !== 'win' || !lastWin) return;
+    const { stars, winInfo, colChestBonus } = lastWin;
     const col = L.collection;
     const st = colStats(L.colIdx);
     const pct = Math.round((st.done / 12) * 100);
-    const isLastInCol = !S.isDaily && L.itemIdx === 11;
-    const nextIdx = S.isDaily ? Math.min(MAX_LEVEL, Math.max(1, store.unlocked)) : Math.min(MAX_LEVEL, S.idx + 1);
-    const nextLabel = S.isDaily ? 'Ana Ekrana Dön' : (isLastInCol && S.idx < MAX_LEVEL ? 'Sonraki Koleksiyon ▶' : 'Sonraki ▶');
+    const isCampaign = S.mode === 'level';
+    const isTower = S.mode === 'tower';
+    const isLastInCol = isCampaign && L.itemIdx === 11;
+    const nextLabel = S.isDaily ? 'Ana Ekrana Dön'
+      : isTower ? 'Sonraki Kat ▶'
+        : S.idx >= MAX_LEVEL ? 'Usta Kulesi 🗼'
+          : isLastInCol ? 'Sonraki Koleksiyon ▶' : 'Sonraki ▶';
+    const eyebrow = S.isDaily ? 'GÜNLÜK ÖZEL BULMACA TAMAMLANDI'
+      : isTower ? (L.isBoss ? 'MUHAFIZ KATI AŞILDI' : 'USTA KULESİ') : `Koleksiyon ${col.num} · ${col.title}`;
+    const title = isCampaign ? `${L.itemIdx + 1}. ${L.pieceName}` : L.pieceName;
+    const streakTxt = S.isDaily ? `📅 ${winInfo.streak} Günlük Seri` : isTower ? `🗼 En iyi kat ${econ.d.towerBest}` : `🔥 ${winInfo.streak} Seri`;
+    const earned = winInfo.totalEarned;
+    const rewardLine = earned > 0
+      ? `+${earned * (lastWin.doubled ? 2 : 1)} 🪙 Kazanıldı${lastWin.doubled ? ' (2x!)' : ''}`
+      : 'Bugünkü ödül zaten alındı';
+    const subLine = winInfo.isReplay ? 'Tekrar oynama ödülü' : `🏺 Kumbara +${winInfo.piggyAdded} (${winInfo.piggyTotal}/3.000)`;
+    const showDouble = earned > 0 && !winInfo.isReplay;
 
     E.modal.innerHTML = `<div class="card win">
-      <div class="eyebrow">${S.isDaily ? 'GÜNLÜK ÖZEL BULMACA TAMAMLANDI' : `Koleksiyon ${col.num} · ${col.title}`}</div>
-      <h2>${S.isDaily ? L.pieceName : `${L.itemIdx + 1}. ${L.pieceName}`}</h2>
+      <div class="eyebrow">${eyebrow}</div>
+      <h2>${title}</h2>
       <div class="thumb">${thumbSVG(L)}</div>
       <div class="stars">${[1, 2, 3].map(k => k <= stars ? `<span class="on" style="animation-delay:${0.1 * k}s">★</span>` : '★').join('')}</div>
-      <div class="stat">${S.used} döküm · 3★ hedefi ${L.min} · 🔥 ${winInfo.streak} ${S.isDaily ? 'Günlük Seri' : 'Seri'}</div>
+      <div class="stat">${S.used} döküm · 3★ hedefi ${L.min} · ${streakTxt}</div>
       <div class="reward-box">
         <div>
-          <b id="winCoinTxt">+${winInfo.totalEarned} 🪙 Kazanıldı</b>
-          <small>🏺 Kumbara +${winInfo.piggyAdded} (${winInfo.piggyTotal}/3.000)</small>
+          <b id="winCoinTxt">${rewardLine}</b>
+          <small>${subLine}</small>
         </div>
-        <button class="btn ad" id="btnDoubleCoin" style="flex:0 0 auto;padding:8px 11px;font-size:12.5px">🎬 2x (+${winInfo.totalEarned} 🪙)</button>
+        ${showDouble ? `<button class="btn ad" id="btnDoubleCoin" style="flex:0 0 auto;padding:8px 11px;font-size:12.5px" ${lastWin.doubled ? 'disabled' : ''}>${lastWin.doubled ? '✓ 2x Alındı' : `🎬 2x (+${earned} 🪙)`}</button>` : ''}
       </div>
+      ${winInfo.isBoss ? `<div class="streak-warn" style="background:rgba(45,212,191,.13);border-color:rgba(45,212,191,.5);color:#99f6e4">🗝 <b>Muhafız Hazinesi: +1 ❄ Soğut ve +1 🔗 Lehim!</b></div>` : ''}
       ${colChestBonus ? `<div class="streak-warn" style="background:rgba(70,212,134,.15);border-color:rgba(70,212,134,.5);color:#9ef7c2">🏆 <b>Koleksiyon Hazinesi Açıldı: +${colChestBonus} 🪙 + Booster!</b></div>` : ''}
-      <div class="col-prog">
+      ${isCampaign ? `<div class="col-prog">
         <div class="col-prog-top">
           <span>${col.title}</span>
           <span style="color:${col.accent}">${st.done} / 12 Vitray · ★${st.stars}/36</span>
         </div>
         <div class="col-prog-bar"><div class="col-prog-fill" style="width:${pct}%;background:${col.accent}"></div></div>
-      </div>
+      </div>` : ''}
       <div class="row">
         <button class="btn" data-a="home">⌂ Ana Ekran</button>
-        <button class="btn" data-a="album">🏛 Galeri</button>
+        ${isCampaign ? '<button class="btn" data-a="album">🏛 Galeri</button>' : ''}
         <button class="btn primary" data-a="next">${nextLabel}</button>
       </div>
     </div>`;
     E.modal.hidden = false;
 
     const dblBtn = $('#btnDoubleCoin');
-    if (dblBtn) {
+    if (dblBtn && !lastWin.doubled) {
       dblBtn.onclick = () => {
         dblBtn.disabled = true;
         playAd('2x Altın Ödülü', () => {
-          econ.earn(winInfo.totalEarned, 'win_double_ad');
+          econ.earn(earned, 'win_double_ad');
+          lastWin.doubled = true;
           Snd.coin();
           updateHUD();
           const txt = $('#winCoinTxt');
-          if (txt) txt.textContent = `+${winInfo.totalEarned * 2} 🪙 Kazanıldı (2x!)`;
+          if (txt) txt.textContent = `+${earned * 2} 🪙 Kazanıldı (2x!)`;
           dblBtn.textContent = '✓ 2x Alındı';
         });
       };
     }
-    const advanceNext = () => {
-      if (S.isDaily) {
-        goHome();
-        return;
-      }
-      if (econ.shouldShowInterstitial(S.idx)) {
-        playAd('Geçiş Reklamı', () => startLevel(nextIdx));
-      } else {
-        startLevel(nextIdx);
-      }
-    };
-    E.modal.querySelector('[data-a=next]').onclick = advanceNext;
+    E.modal.querySelector('[data-a=next]').onclick = advanceAfterWin;
     E.modal.querySelector('[data-a=home]').onclick = () => goHome();
-    E.modal.querySelector('[data-a=album]').onclick = () => goCollections(L.colIdx);
+    const album = E.modal.querySelector('[data-a=album]');
+    if (album) album.onclick = () => goCollections(L.colIdx);
+  }
+
+  // ---------- Daily Missions Modal ----------
+  function rewardText(r) {
+    const parts = [];
+    if (r.coins) parts.push(`+${r.coins} 🪙`);
+    if (r.inv) for (const k in r.inv) parts.push(`+${r.inv[k]} ${EMod.BOOSTERS[k].icon}`);
+    return parts.join(' ');
+  }
+
+  function openMissions() {
+    const today = EMod.localToday();
+    const cur = econ.ensureMissions(towerOpen(), today);
+    const rows = cur.ids.map(id => {
+      const m = EMod.MISSIONS.find(x => x.id === id);
+      const prog = Math.min(m.goal, cur.prog[id] || 0);
+      const claimed = !!cur.claimed[id], ready = !claimed && prog >= m.goal;
+      return `<div class="quest ${ready ? 'ready' : ''} ${claimed ? 'done' : ''}">
+        <div class="quest-body">
+          <strong>${m.text}</strong>
+          <small>Ödül: ${rewardText(m)}</small>
+          <div class="quest-prog">
+            <div class="col-prog-bar"><div class="col-prog-fill" style="width:${Math.round(prog / m.goal * 100)}%"></div></div>
+            <span>${prog}/${m.goal}</span>
+          </div>
+        </div>
+        <button class="quest-btn" data-m="${id}" ${ready ? '' : 'disabled'}>${claimed ? '✓' : 'Topla'}</button>
+      </div>`;
+    }).join('');
+    const allClaimed = cur.ids.every(id => cur.claimed[id]);
+    E.modal.innerHTML = `<div class="card">
+      <div class="row" style="align-items:center">
+        <div style="flex:1">
+          <div class="eyebrow">HER GÜN YENİLENİR</div>
+          <h2>📜 Günlük Görevler</h2>
+        </div>
+        <button class="icon-btn" data-a="close" aria-label="Kapat">✕</button>
+      </div>
+      <div class="quest-list">${rows}</div>
+      <div class="quest quest-bonus ${allClaimed && !cur.bonus ? 'ready' : ''} ${cur.bonus ? 'done' : ''}">
+        <div class="quest-ico">🎁</div>
+        <div class="quest-body">
+          <strong>Günün Sandığı</strong>
+          <small>3 görevi de topla: ${rewardText(EMod.MISSION_BONUS)}</small>
+        </div>
+        <button class="quest-btn" id="btnMissionBonus" ${allClaimed && !cur.bonus ? '' : 'disabled'}>${cur.bonus ? '✓' : 'Aç'}</button>
+      </div>
+    </div>`;
+    E.modal.hidden = false;
+    E.modal.querySelector('[data-a=close]').onclick = () => { closeModal(); if (currentScreen === 'home') refreshHome(); };
+    E.modal.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+      const m = econ.claimMission(b.dataset.m, today);
+      if (!m) return;
+      Snd.coin(); updateTopBar(); openMissions();
+      toast(`📜 ${rewardText(m)} eklendi!`);
+    });
+    const bonus = $('#btnMissionBonus');
+    if (bonus) bonus.onclick = () => {
+      if (!econ.claimMissionBonus(today)) return;
+      Snd.coin(); updateTopBar(); openMissions();
+      toast(`🎁 Günün Sandığı: ${rewardText(EMod.MISSION_BONUS)}`);
+    };
+  }
+
+  // ---------- Achievements Modal ----------
+  function openAchievements() {
+    const metrics = achMetrics();
+    const rank = a => econ.achievementReady(a, metrics) ? 0 : econ.d.claimedAch[a.id] ? 2 : 1;
+    const sorted = EMod.ACHIEVEMENTS.slice().sort((a, b) => rank(a) - rank(b));
+    const doneCount = EMod.ACHIEVEMENTS.filter(a => econ.d.claimedAch[a.id]).length;
+    const rows = sorted.map(a => {
+      const val = Math.min(a.goal, metrics[a.metric] || 0);
+      const claimed = !!econ.d.claimedAch[a.id], ready = econ.achievementReady(a, metrics);
+      return `<div class="quest ${ready ? 'ready' : ''} ${claimed ? 'done' : ''}">
+        <div class="quest-ico">${a.icon}</div>
+        <div class="quest-body">
+          <strong>${a.name}</strong>
+          <small>${a.desc}</small>
+          ${claimed ? '' : `<div class="quest-prog">
+            <div class="col-prog-bar"><div class="col-prog-fill" style="width:${Math.round(val / a.goal * 100)}%"></div></div>
+            <span>${val}/${a.goal}</span>
+          </div>`}
+        </div>
+        <button class="quest-btn" data-ach="${a.id}" ${ready ? '' : 'disabled'}>${claimed ? '✓' : `+${a.coins} 🪙`}</button>
+      </div>`;
+    }).join('');
+    E.modal.innerHTML = `<div class="card">
+      <div class="row" style="align-items:center">
+        <div style="flex:1">
+          <div class="eyebrow">USTALIK DEFTERİ</div>
+          <h2>🏆 Başarımlar</h2>
+        </div>
+        <button class="icon-btn" data-a="close" aria-label="Kapat">✕</button>
+      </div>
+      <div class="ach-summary"><span>${doneCount} / ${EMod.ACHIEVEMENTS.length} toplandı</span></div>
+      <div class="quest-list">${rows}</div>
+    </div>`;
+    E.modal.hidden = false;
+    E.modal.querySelector('[data-a=close]').onclick = () => { closeModal(); if (currentScreen === 'home') refreshHome(); };
+    E.modal.querySelectorAll('[data-ach]').forEach(b => b.onclick = () => {
+      const a = econ.claimAchievement(b.dataset.ach, achMetrics());
+      if (!a) return;
+      Snd.coin(); updateTopBar(); openAchievements();
+      toast(`🏆 ${a.name}: +${a.coins} 🪙`);
+    });
+  }
+
+  // ---------- Master's Tower Modal ----------
+  function openTower() {
+    if (!towerOpen()) {
+      toast(`🔒 Usta Kulesi ${EMod.CONFIG.towerUnlockLevel}. seviyeden sonra açılır`);
+      return;
+    }
+    const floor = econ.d.towerFloor || 1;
+    const nextBoss = Math.ceil(floor / 10) * 10;
+    const rows = [];
+    for (let f = floor + 3; f >= Math.max(1, floor - 1); f--) {
+      const boss = f % 10 === 0;
+      const cls = [f === floor ? 'cur' : '', f < floor ? 'done' : '', boss && f >= floor ? 'boss' : ''].join(' ');
+      const reward = EMod.CONFIG.towerBossCoins * (boss ? 1 : 0) + econ.towerFloorReward(f);
+      rows.push(`<div class="tower-floor ${cls}">
+        <span>${boss ? '🗝 Muhafız' : f === floor ? '▶ Sıradaki' : 'Kat'}</span>
+        <b>${f}</b>
+        <span>${f < floor ? '✓' : `+${reward} 🪙`}</span>
+      </div>`);
+    }
+    E.modal.innerHTML = `<div class="card">
+      <div class="row" style="align-items:center">
+        <div style="flex:1">
+          <div class="eyebrow">SONSUZ MOD</div>
+          <h2>🗼 Usta Kulesi</h2>
+        </div>
+        <button class="icon-btn" data-a="close" aria-label="Kapat">✕</button>
+      </div>
+      <p class="sub">Her kat yeni bir vitray. Yükseldikçe zorlaşır, her 10. katta muhafız seni bekler.</p>
+      <div class="tower-stack">${rows.join('')}</div>
+      <div class="tower-stats">
+        <div class="col-card" style="cursor:default"><span class="col-card-tag">En Yüksek Kat</span><strong style="color:var(--gold)">${econ.d.towerBest || 0}</strong></div>
+        <div class="col-card" style="cursor:default"><span class="col-card-tag">Sıradaki Muhafız</span><strong style="color:#5eead4">Kat ${nextBoss}</strong></div>
+      </div>
+      <div class="row"><button class="btn primary" data-a="climb">▶ ${floor}. Kata Çık</button></div>
+    </div>`;
+    E.modal.hidden = false;
+    E.modal.querySelector('[data-a=close]').onclick = () => closeModal();
+    E.modal.querySelector('[data-a=climb]').onclick = () => { Snd.click(); startTower(); };
+  }
+
+  // ---------- How To Play Modal ----------
+  function openHelp() {
+    const row = (ico, name, text) => `<div class="howto"><div class="howto-ico">${ico}</div><div><strong>${name}</strong><p>${text}</p></div></div>`;
+    E.modal.innerHTML = `<div class="card">
+      <div class="row" style="align-items:center">
+        <div style="flex:1">
+          <div class="eyebrow">ATÖLYE REHBERİ</div>
+          <h2>📖 Nasıl Oynanır</h2>
+        </div>
+        <button class="icon-btn" data-a="close" aria-label="Kapat">✕</button>
+      </div>
+      <h3>Temel Kurallar</h3>
+      ${row('🫗', 'Döküm', 'Potadan renk seç ve aynı renk işaretli boş bölmeye dokun. Her bölme kendi rengini ister.')}
+      ${row('⌄', 'Taşma', 'Altın oklu açıklıklardan cam aşağıdaki boş bölmelere akar. Aynı renkli bölmeleri tek dökümde doldurarak yıldız kazan.')}
+      ${row('🧱', 'Sıralama', 'Dolu bölme akışı keser. Alttaki farklı renkli bölmeyi önce doldurursan üstteki cam taşmaz.')}
+      <h3>Özel Teknikler</h3>
+      ${Object.values(MECH_INFO).map(m => row(m.icon, m.name, m.text)).join('')}
+      <h3>Güçlendiriciler</h3>
+      ${Object.values(EMod.BOOSTERS).map(b => row(b.icon, b.name, b.desc)).join('')}
+    </div>`;
+    E.modal.hidden = false;
+    E.modal.querySelector('[data-a=close]').onclick = () => closeModal();
   }
 
   // ---------- 7-Day Daily Reward Modal ----------
@@ -1586,7 +2013,7 @@
     E.modal.hidden = false;
 
     E.modal.querySelector('[data-a=close]').onclick = () => {
-      if (currentScreen === 'game' && S && S.status === 'win') showWin(store.stars[S.idx] || 1);
+      if (currentScreen === 'game' && S && S.status === 'win' && lastWin) showWin();
       else closeModal();
     };
     const freeBtn = $('#btnFreeCoins');
@@ -1662,6 +2089,14 @@
           <span class="col-card-tag">Günlük Vitray Serisi</span>
           <strong style="color:#c084fc">📅 ${pStreak} Gün</strong>
         </div>
+        <div class="col-card" style="cursor:default">
+          <span class="col-card-tag">Usta Kulesi</span>
+          <strong style="color:#5eead4">🗼 Kat ${econ.d.towerBest || 0}</strong>
+        </div>
+        <div class="col-card" style="cursor:default">
+          <span class="col-card-tag">Başarımlar</span>
+          <strong style="color:#fda4af">🏆 ${Object.keys(econ.d.claimedAch).length} / ${EMod.ACHIEVEMENTS.length}</strong>
+        </div>
       </div>
 
       <h3>Oynanış & Erişilebilirlik</h3>
@@ -1671,7 +2106,7 @@
 
       <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center">
         <button class="linkbtn" data-a="reset">İlerlemeyi sıfırla</button>
-        <small style="color:var(--muted);font:600 11px var(--f-mono)">v1.2 · Stained Glass</small>
+        <small style="color:var(--muted);font:600 11px var(--f-mono)">v1.3 · Stained Glass</small>
       </div>
     </div>`;
     E.modal.hidden = false;
@@ -1679,8 +2114,8 @@
     E.modal.querySelector('[data-a=close]').onclick = () => closeModal();
     E.modal.querySelector('[data-a=reset]').onclick = () => {
       if (!confirm('Tüm koleksiyon ve altın ilerlemesi silinsin mi?')) return;
-      localStorage.removeItem(KEY);
-      location.reload();
+      ['sg_proto_v1', 'sg_proto_v2', KEY].forEach(k => localStorage.removeItem(k));
+      location.search = '';
     };
     E.modal.querySelectorAll('[data-t]').forEach(t => t.onclick = () => {
       const k = t.dataset.t; store.settings[k] = !store.settings[k]; save();
@@ -1695,10 +2130,11 @@
   // keyboard shortcuts for desktop testing
   window.addEventListener('keydown', ev => {
     if (!E.modal.hidden) {
-      if (ev.key === 'Escape') closeModal();
-      else if ((ev.key === 'Enter' || ev.key === ' ') && currentScreen === 'game' && S && S.status === 'win') {
+      const winOpen = currentScreen === 'game' && S && S.status === 'win';
+      if (ev.key === 'Escape' && !winOpen) closeModal();
+      else if ((ev.key === 'Enter' || ev.key === ' ') && winOpen) {
         ev.preventDefault();
-        if (S.isDaily) goHome(); else startLevel(Math.min(MAX_LEVEL, S.idx + 1));
+        advanceAfterWin();
       }
       return;
     }
@@ -1708,8 +2144,8 @@
     else if (ev.key === 'z' || ev.key === 'Z') E.bUndo.click();
     else if (ev.key === 'r' || ev.key === 'R') E.bRestart.click();
     else if (ev.key === 'h' || ev.key === 'H') E.bHint.click();
-    else if (ev.key === 'ArrowLeft' && !S.isDaily && S.idx > 1) startLevel(S.idx - 1);
-    else if (ev.key === 'ArrowRight' && !S.isDaily && S.idx < MAX_LEVEL) startLevel(S.idx + 1);
+    else if (ev.key === 'ArrowLeft') E.btnPrev.click();
+    else if (ev.key === 'ArrowRight') E.btnNext.click();
   });
   window.addEventListener('resize', () => { if (currentScreen === 'game' && S && S.status === 'win') castRays(); });
 
@@ -1721,6 +2157,8 @@
     startLevel(qLevel);
   } else if (qs.get('puzzle') === '1') {
     startDailyPuzzle();
+  } else if (qs.get('tower') === '1' && towerOpen()) {
+    startTower();
   } else if (qs.get('collections') === '1' || qs.get('map') === '1') {
     goCollections();
   } else {
@@ -1733,16 +2171,15 @@
 
   // ?demo=1 -> auto-plays the optimal solution
   if (qs.get('demo') === '1') {
-    if (currentScreen !== 'game') startLevel(Math.min(MAX_LEVEL, Math.max(1, store.unlocked)));
+    if (currentScreen !== 'game') startLevel(currentLevelIdx());
     const step = () => {
       if (S.status === 'win') {
         setTimeout(() => { if (qs.get('chain') === '1') { startLevel(S.idx + 1); setTimeout(step, 500); } }, 1800);
         return;
       }
       if (S.status === 'play') {
-        let mask = 0; S.fill.forEach((v, i) => { if (v != null) mask |= 1 << i; });
-        const r = G.solveFrom(L.cells.length, activeDown(), L.target, mask);
-        if (r) { selectPot(L.target[r.first], true); pour(r.first, L.cells[r.first].c); }
+        const r = solveNow();
+        if (r) { selectPot(r.col, true); pour(r.first, L.cells[r.first].c); }
       }
       setTimeout(step, 550);
     };

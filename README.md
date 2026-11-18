@@ -11,8 +11,19 @@ Kurşun çerçeveli vitray bulmacası prototipi (Bulmaca Konsept Atlası #8).
 2. **Döküm Sırası Stratejisi:**
    - Alt-üst bölmeler aynı renkse üstten dökerek tek döküm hakkıyla birden fazla bölmeyi doldurursun.
    - Alt bölme farklı renkse önce alttaki bölmeyi doldurup katılaştırırsın (**dolu bölme akışı keser**), ardından üsttekini güvenle dökersin.
-3. **Booster'lar:** `❄ Soğut` (sıradaki döküm taşmaz), `+2 Döküm`, `↶ Geri al`, `? İpucu` (BFS çözücü ile en kısa hamle).
-4. **Koleksiyon Albümü:** Tamamlanan her vitray (`Chartres`, `Sainte-Chapelle`, `Notre-Dame`, `Köln`, `Sagrada Família` vb.) yıldız derecesiyle albüme kaydedilir.
+3. **Özel Teknikler (Koleksiyon 5+):**
+   - **✦ Prizma Cam:** Her rengi kabul eder, üzerinden geçen cam rengini koruyarak akmaya devam eder.
+   - **🔒 Mühürlü Bölme:** Aynı harfli anahtar bölmesi dolana kadar döküm almaz ve akışı durdurur.
+   - **⟳ Döner Kapak:** Her dökümden sonra açılıp kapanır, dökümlerin ritmini belirler.
+4. **Booster'lar:** `❄ Soğut` (sıradaki döküm taşmaz), `🔗 Lehim`, `+2 Döküm`, `↶ Geri al`, `? İpucu` (BFS çözücü ile en kısa hamle).
+5. **Koleksiyon Albümü:** 12 koleksiyonda 144 vitray ve 432 yıldız. Bölümler sırayla açılır.
+
+## Oyun Modları
+
+- **Usta Kulesi:** 10. seviyeden sonra açılan sonsuz mod. Her 10. kat bir muhafız katıdır.
+- **Günün Vitrayı:** Her gün yeni bir bulmaca ve günlük seri.
+- **Günlük Görevler:** Her gün 3 görev ve bir bonus sandık.
+- **Başarımlar:** 24 ustalık hedefi ve altın ödülleri.
 
 ## App Store Connect & TestFlight Kurulumu
 

@@ -66,8 +66,138 @@
         'Kiasma', 'Buzul Prizması', 'Kuzey Tacı', 'Fiyort Aynası',
         'Aurora Borealis', 'Kristal Kubbe', 'Geceyarısı Güneşi', 'Kutup Yıldızı'
       ]
+    },
+    {
+      id: 'byzantine',
+      num: 5,
+      title: 'Bizans Mozaikleri',
+      subtitle: 'Altın zeminli kubbeler ve prizma camlar',
+      badge: 'Prizma Serisi',
+      accent: '#E9B949',
+      shapes: ['hexagon', 'apse', 'octagon'],
+      colors: ['y', 'b', 't', 'm', 'w', 'g', 'r'],
+      mech: ['prism'],
+      pieces: [
+        'Ayasofya', 'Kariye', 'San Vitale', 'Aziz Markos',
+        'Pammakaristos', 'Monreale', 'Daphni', 'Hosios Loukas',
+        'Aya İrini', 'Galla Placidia', 'Nea Moni', 'Sümela'
+      ]
+    },
+    {
+      id: 'andalus',
+      num: 6,
+      title: 'Endülüs Avluları',
+      subtitle: 'Mühürlü kapılar ardında gizli avlular',
+      badge: 'Mühür Serisi',
+      accent: '#3FBF9B',
+      shapes: ['andalus_arch', 'octagon', 'shamsa'],
+      colors: ['t', 'b', 'y', 'm', 'w', 'g', 'o'],
+      mech: ['lock'],
+      pieces: [
+        'Elhamra', 'Kurtuba Camii', 'Sevilla Alcázarı', 'Generalife',
+        'Medina Azahara', 'Giralda', 'Aljafería', 'Alcazaba',
+        'Torre del Oro', 'Aslanlı Avlu', 'Mexuar', 'Elçiler Salonu'
+      ]
+    },
+    {
+      id: 'persian',
+      num: 7,
+      title: 'Pers Bahçeleri',
+      subtitle: 'Şiraz ışığı, orsi pencereler ve türkuaz eyvanlar',
+      badge: 'Orsi Serisi',
+      accent: '#38BDF8',
+      shapes: ['iwan', 'shamsa', 'andalus_arch'],
+      colors: ['t', 'b', 'k', 'y', 'g', 'p', 'w'],
+      mech: ['prism', 'lock'],
+      pieces: [
+        'Nasirü\'l-Mülk', 'Şeyh Lütfullah', 'İmam Camii', 'Çehel Sütun',
+        'Gülistan Sarayı', 'Cuma Camii', 'Eram Bahçesi', 'Âlî Kapı',
+        'Şah Çerağ', 'Heşt Behişt', 'Fin Bahçesi', 'Vekil Camii'
+      ]
+    },
+    {
+      id: 'fareast',
+      num: 8,
+      title: 'Uzak Doğu Fenerleri',
+      subtitle: 'Ritimle dönen kapaklar ve kâğıt fener ışığı',
+      badge: 'Kapak Serisi',
+      accent: '#F87171',
+      shapes: ['lantern', 'moon_gate', 'hexagon'],
+      colors: ['r', 'y', 'm', 'w', 'g', 'o', 't'],
+      mech: ['valve'],
+      pieces: [
+        'Kinkaku-ji', 'Fushimi Inari', 'Himeji', 'Hoi An Feneri',
+        'Yasak Şehir', 'Gyeongbokgung', 'Kiyomizu-dera', 'Göksel Tapınak',
+        'Todai-ji', 'Wat Arun', 'Bagan', 'Angkor Wat'
+      ]
+    },
+    {
+      id: 'artdeco',
+      num: 9,
+      title: 'Art Deco Işıkları',
+      subtitle: 'Güneş yelpazeleri, krom ve neon çizgiler',
+      badge: 'Deco Serisi',
+      accent: '#FBBF24',
+      shapes: ['sunburst', 'deco_gate', 'lozenge'],
+      colors: ['y', 'w', 'k', 't', 'b', 'm', 'o'],
+      mech: ['valve', 'prism'],
+      pieces: [
+        'Chrysler', 'Rockefeller', 'Radio City', 'Empire State',
+        'Eastern Columbia', 'Grand Rex', 'Palais de Tokyo', 'Ocean Drive',
+        'Eros Sineması', 'Napier', 'Hoover Binası', 'Fox Tiyatrosu'
+      ]
+    },
+    {
+      id: 'baroque',
+      num: 10,
+      title: 'Barok Sarayları',
+      subtitle: 'Aynalı galeriler, kalkanlar ve saray kapıları',
+      badge: 'Saray Serisi',
+      accent: '#C084FC',
+      shapes: ['shield', 'oeil', 'apse'],
+      colors: ['y', 'm', 'w', 'p', 'b', 'g', 'k'],
+      mech: ['lock', 'valve'],
+      pieces: [
+        'Versay', 'Würzburg', 'Schönbrunn', 'Zwinger',
+        'Caserta', 'Peterhof', 'Belvedere', 'Sanssouci',
+        'Dolmabahçe', 'Blenheim', 'Melk Manastırı', 'Aynalı Galeri'
+      ]
+    },
+    {
+      id: 'celestial',
+      num: 11,
+      title: 'Göksel Atlas',
+      subtitle: 'Takımyıldızlar, kuyruklu yıldızlar ve gece camları',
+      badge: 'Gökyüzü Serisi',
+      accent: '#818CF8',
+      shapes: ['comet', 'astrolabe', 'lozenge'],
+      colors: ['b', 'p', 't', 'w', 'y', 'k', 'g'],
+      mech: ['prism', 'lock', 'valve'],
+      pieces: [
+        'Orion', 'Andromeda', 'Kassiopeia', 'Büyük Ayı',
+        'Sirius', 'Vega', 'Ülker', 'Kuğu',
+        'Kartal', 'Betelgeuse', 'Samanyolu', 'Polaris'
+      ]
+    },
+    {
+      id: 'masterwork',
+      num: 12,
+      title: 'Ustanın Şaheseri',
+      subtitle: 'Tüm tekniklerin buluştuğu son atölye',
+      badge: 'Usta Serisi',
+      accent: '#FFD97D',
+      shapes: ['grand_rose', 'iwan', 'comet'],
+      colors: ['r', 'b', 'y', 'g', 'p', 'o', 'k', 't', 'w', 'm'],
+      mech: ['prism', 'lock', 'valve'],
+      pieces: [
+        'Işığın Doğuşu', 'Kızıl Şafak', 'Altın Çağ', 'Yedi Renk',
+        'Sessiz Ayin', 'Kor ve Kül', 'Mavi Saat', 'Zümrüt Rüya',
+        'Ebedi Alev', 'Işık Katedrali', 'Son Dokunuş', 'Ustanın Mührü'
+      ]
     }
   ];
+
+  const WILD = '*';
 
   // ---------- RNG ----------
   function mulberry32(a) {
@@ -150,6 +280,56 @@
       pts.push([L, B], [R, B], [R, S]);
       for (let k = 1; k < 24; k++) { const t = Math.PI * k / 24; pts.push([CX + rx * Math.cos(t), S - ry * Math.sin(t)]); }
       pts.push([L, S]);
+    } else if (type === 'hexagon') {
+      pts.push([200, 28], [342, 128], [342, 412], [200, 514], [58, 412], [58, 128]);
+    } else if (type === 'apse') {
+      // Byzantine apse: round head over a gently tapered base
+      const r = 142, S = 34 + r;
+      pts.push([100, 512], [300, 512], [342, 310], [342, S]);
+      for (let k = 1; k < 24; k++) { const t = Math.PI * k / 24; pts.push([CX + r * Math.cos(t), S - r * Math.sin(t)]); }
+      pts.push([58, S], [58, 310]);
+    } else if (type === 'octagon') {
+      const cx = CX, cy = 272, rx = 158, ry = 224;
+      for (let k = 0; k < 8; k++) { const t = Math.PI * 2 * k / 8 + Math.PI / 8; pts.push([cx + rx / Math.cos(Math.PI / 8) * Math.cos(t), cy + ry / Math.cos(Math.PI / 8) * Math.sin(t)]); }
+    } else if (type === 'andalus_arch') {
+      pts.push([96, 512], [304, 512], [344, 420], [344, 190], [296, 88], [200, 30], [104, 88], [56, 190], [56, 420]);
+    } else if (type === 'shamsa') {
+      const cx = CX, cy = 272, rx = 164, ry = 214;
+      for (let k = 0; k < 16; k++) { const t = Math.PI * 2 * k / 16 + Math.PI / 16; pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
+    } else if (type === 'iwan') {
+      // Persian four-centred arch
+      pts.push([70, 512], [330, 512], [330, 230], [304, 140], [252, 76], [200, 30], [148, 76], [96, 140], [70, 230]);
+    } else if (type === 'lantern') {
+      const cy = 272, rx = 168, ry = 256, h = 216;
+      for (let k = 0; k <= 12; k++) { const y = cy + h - 2 * h * k / 12; pts.push([CX + rx * Math.sqrt(1 - ((y - cy) / ry) ** 2), y]); }
+      for (let k = 0; k <= 12; k++) { const y = cy - h + 2 * h * k / 12; pts.push([CX - rx * Math.sqrt(1 - ((y - cy) / ry) ** 2), y]); }
+    } else if (type === 'moon_gate') {
+      // Ellipse with a flat threshold
+      const cx = CX, cy = 270, rx = 170, ry = 238, cut = Math.PI / 6;
+      for (let k = 0; k <= 28; k++) { const t = Math.PI / 2 + cut + (2 * Math.PI - 2 * cut) * k / 28; pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
+    } else if (type === 'sunburst') {
+      pts.push([128, 512], [272, 512], [348, 250], [318, 130], [256, 54], [200, 34], [144, 54], [82, 130], [52, 250]);
+    } else if (type === 'deco_gate') {
+      pts.push([120, 512], [280, 512], [336, 440], [336, 104], [280, 32], [120, 32], [64, 104], [64, 440]);
+    } else if (type === 'lozenge') {
+      pts.push([200, 26], [340, 226], [340, 318], [200, 518], [60, 318], [60, 226]);
+    } else if (type === 'shield') {
+      pts.push([200, 514], [296, 452], [346, 340], [346, 110], [300, 44], [100, 44], [54, 110], [54, 340], [104, 452]);
+    } else if (type === 'oeil') {
+      const cx = CX, cy = 272, rx = 172, ry = 202;
+      for (let k = 0; k < 24; k++) { const t = Math.PI * 2 * k / 24; pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
+    } else if (type === 'comet') {
+      // Teardrop: a circle with tangents up to a single apex
+      const cy = 352, r = 158, apex = 28, a = Math.acos(r / (cy - apex));
+      const from = -Math.PI / 2 + a, span = 2 * Math.PI - 2 * a;
+      for (let k = 0; k <= 22; k++) { const t = from + span * k / 22; pts.push([CX + r * Math.cos(t), cy + r * Math.sin(t)]); }
+      pts.push([CX, apex]);
+    } else if (type === 'astrolabe') {
+      const cx = CX, cy = 272, rx = 176, ry = 192;
+      for (let k = 0; k < 20; k++) { const t = Math.PI * 2 * k / 20 + Math.PI / 20; pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
+    } else if (type === 'grand_rose') {
+      const cx = CX, cy = 272, rx = 176, ry = 232;
+      for (let k = 0; k < 14; k++) { const t = Math.PI * 2 * k / 14 + Math.PI / 14; pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
     } else { // round arch
       const L = 62, R = 338, B = 512, r = 138, S = 34 + r;
       pts.push([L, B], [R, B], [R, S]);
@@ -315,6 +495,118 @@
     return null;
   }
 
+  // Full solver: prism cells, sealed cells and alternating valves.
+  // spec = { n, down, target, palette, lockKey?, valves? }  valves: { 'u>d': phase }
+  function solveAdv(spec, startMask, startParity) {
+    const { n, down, target, palette } = spec;
+    const lockKey = spec.lockKey || null;
+    const valves = spec.valves || null;
+    const hasV = !!valves && Object.keys(valves).length > 0;
+    const full = (1 << n) - 1;
+    const size = 1 << (n + (hasV ? 1 : 0));
+    const startState = (startMask | 0) | (hasV ? (startParity & 1) << n : 0);
+    const dist = new Int8Array(size).fill(-1), first = new Int8Array(size).fill(-1), firstCol = new Int8Array(size).fill(-1);
+    const q = new Int32Array(size); let h = 0, t = 0;
+    q[t++] = startState; dist[startState] = 0;
+    const stack = new Int32Array(n + 1);
+    const phase = down.map((arr, u) => arr.map(d => (hasV && valves[u + '>' + d] != null) ? valves[u + '>' + d] : -1));
+    while (h < t) {
+      const st = q[h++], s = st & full, par = hasV ? (st >> n) & 1 : 0;
+      if (s === full) {
+        const pi = firstCol[st];
+        return { min: dist[st], first: first[st], col: pi >= 0 ? palette[pi] : (first[st] >= 0 ? target[first[st]] : null) };
+      }
+      for (let x = 0; x < n; x++) {
+        if ((s >> x) & 1) continue;
+        if (lockKey && lockKey[x] >= 0 && !((s >> lockKey[x]) & 1)) continue;
+        const isWild = target[x] === WILD, nCols = isWild ? palette.length : 1;
+        for (let ci = 0; ci < nCols; ci++) {
+          const col = isWild ? palette[ci] : target[x];
+          let m = 1 << x, sp = 0, ok = true;
+          stack[sp++] = x;
+          while (sp && ok) {
+            const c = stack[--sp], ds = down[c], ph = phase[c];
+            for (let k = 0; k < ds.length; k++) {
+              const j = ds[k];
+              if (ph[k] >= 0 && ph[k] !== par) continue;
+              if (((s >> j) & 1) || ((m >> j) & 1)) continue;
+              if (lockKey && lockKey[j] >= 0 && !((s >> lockKey[j]) & 1)) continue;
+              if (target[j] !== col && target[j] !== WILD) { ok = false; break; }
+              m |= 1 << j; stack[sp++] = j;
+            }
+          }
+          if (!ok) continue;
+          const ns = (s | m) | (hasV ? ((par ^ 1) << n) : 0);
+          if (dist[ns] >= 0) continue;
+          dist[ns] = dist[st] + 1;
+          if (st === startState) { first[ns] = x; firstCol[ns] = isWild ? ci : -1; }
+          else { first[ns] = first[st]; firstCol[ns] = firstCol[st]; }
+          q[t++] = ns;
+        }
+      }
+    }
+    return null;
+  }
+
+  // ---------- Special cells & gaps (mirror-symmetric, best effort, at least one of each requested) ----------
+  function applyMechanics(M, ctx) {
+    const { n, edges, mirror, target, pal, rng } = ctx;
+    const reps = [...Array(n).keys()].filter(i => i <= mirror[i]);
+    const openAt = Array.from({ length: n }, () => ({ inc: [], out: [] }));
+    edges.forEach(e => { if (e.open) { openAt[e.u].out.push(e); openAt[e.d].inc.push(e); } });
+
+    // Prism cells: prefer panes that sit on a flow path
+    if (M.prism) {
+      let done = 0;
+      for (const i of shuffle(reps.filter(i => openAt[i].inc.length + openAt[i].out.length > 0), rng)) {
+        if (done >= M.prism) break;
+        const left = target.filter((v, k) => k !== i && k !== mirror[i]);
+        if (!pal.every(c => left.includes(c))) continue;
+        target[i] = WILD; target[mirror[i]] = WILD; done++;
+      }
+      if (!done) return null;
+    }
+
+    // Valves: alternate open/closed with every pour
+    let valves = null;
+    if (M.valve) {
+      const key = (i, j) => i < j ? i + '-' + j : j + '-' + i;
+      const emap = new Map(edges.map(e => [key(e.i, e.j), e]));
+      const seen = new Set(); let done = 0;
+      for (const e of shuffle(edges.filter(x => x.open), rng)) {
+        if (done >= M.valve) break;
+        const k = key(e.i, e.j); if (seen.has(k)) continue;
+        const mk = key(mirror[e.i], mirror[e.j]); seen.add(k); seen.add(mk);
+        const phase = rng() < 0.5 ? 0 : 1;
+        e.valve = phase;
+        const me = emap.get(mk); if (me && me.open) me.valve = phase;
+        done++;
+      }
+      if (!done) return null;
+      valves = {};
+      edges.forEach(e => { if (e.valve != null) valves[e.u + '>' + e.d] = e.valve; });
+    }
+
+    // Seals: prefer panes shielded from a differently coloured pane above them
+    let lockKey = null;
+    if (M.lock) {
+      lockKey = Array(n).fill(-1);
+      const usedKey = new Set(); let done = 0;
+      const shieldScore = i => openAt[i].inc.some(e => target[e.u] !== target[i]) ? 1 : 0;
+      const cand = shuffle(reps.filter(i => target[i] !== WILD), rng).sort((a, b) => shieldScore(b) - shieldScore(a));
+      for (const x of cand) {
+        if (done >= M.lock) break;
+        if (usedKey.has(x) || usedKey.has(mirror[x])) continue;
+        const keys = shuffle([...Array(n).keys()].filter(k => k !== x && k !== mirror[x] && lockKey[k] < 0), rng);
+        if (!keys.length) continue;
+        const k = keys[0];
+        lockKey[x] = k; lockKey[mirror[x]] = k; usedKey.add(k); done++;
+      }
+      if (!done) return null;
+    }
+    return { lockKey, valves };
+  }
+
   // ---------- Per-collection 12-level curve ----------
   const CURVE = [
     { n: 5, c: 2, open: 0, slack: 0, minSave: 0, traps: 0, bias: .35 },
@@ -331,9 +623,33 @@
     { n: 16, c: 5, open: .72, slack: 0, minSave: 5, traps: 4, bias: .45 },
   ];
 
+  // Collections 5+ share one rising curve and layer in their special mechanics
+  function advancedParams(colIdx, itemIdx) {
+    const col = COLLECTIONS[colIdx], tier = colIdx - 4, ramp = itemIdx / 11;
+    const list = col.mech || [];
+    const mech = {};
+    // First pieces teach a single technique, later pieces combine them
+    const active = itemIdx < 6 ? [list[itemIdx % list.length]] : list;
+    const count = 1 + Math.floor(ramp * 2);
+    active.forEach(m => { mech[m] = count; });
+    return {
+      n: Math.min(16, 8 + Math.round(tier * 0.5) + Math.round(ramp * 6)),
+      c: Math.min(6, 3 + Math.floor(tier / 3) + Math.floor(ramp * 2.2)),
+      open: 0.7,
+      slack: itemIdx === 11 ? 0 : 1,
+      minSave: 2 + Math.floor(ramp * 2),
+      traps: 1 + Math.floor(ramp * 2),
+      bias: 0.45,
+      mech,
+      shape: col.shapes[itemIdx % col.shapes.length],
+      pool: col.colors,
+    };
+  }
+
   function params(idx) {
     const colIdx = Math.min(COLLECTIONS.length - 1, Math.floor((idx - 1) / 12));
     const itemIdx = (idx - 1) % 12;
+    if (colIdx >= 4) return advancedParams(colIdx, itemIdx);
     const col = COLLECTIONS[colIdx];
     const base = Object.assign({}, CURVE[itemIdx]);
     // Later collections start slightly richer while still having a gentle entry on piece 1-2
@@ -402,20 +718,62 @@
     if (P.sameOnly && traps > 0) return null;
     if (P.open === 0 && edges.some(e => e.open)) return null;
 
-    const sol = solveFrom(n, down, target, 0);
+    let lockKey = null, valves = null;
+    if (P.mech && Object.keys(P.mech).length) {
+      const m = applyMechanics(P.mech, { n, edges, mirror, target, pal, rng });
+      if (!m) return null;
+      lockKey = m.lockKey; valves = m.valves;
+    }
+    const palette = pal.filter(k => target.includes(k));
+    const sol = P.mech
+      ? solveAdv({ n, down, target, palette, lockKey, valves }, 0, 0)
+      : solveFrom(n, down, target, 0);
     if (!sol) return null;
     if (n - sol.min < P.minSave) return null;
 
-    return {
+    const out = {
       shapeType: P.shape, shape,
       cells: cells.map(c => ({ poly: c.poly, c: c.c, area: c.area })),
-      edges: edges.map(e => ({ i: e.i, j: e.j, a: e.a, b: e.b, len: e.len, open: e.open, u: e.u, d: e.d })),
-      target, down, palette: pal.filter(k => target.includes(k)), min: sol.min, traps, mirror,
+      edges: edges.map(e => ({ i: e.i, j: e.j, a: e.a, b: e.b, len: e.len, open: e.open, u: e.u, d: e.d, valve: e.valve })),
+      target, down, palette, min: sol.min, traps, mirror,
     };
+    if (lockKey) out.lockKey = lockKey;
+    if (valves) out.valves = valves;
+    return out;
+  }
+
+  // Relaxes difficulty step by step until a valid board exists
+  function searchLevel(P0, seedBase) {
+    let P = Object.assign({}, P0);
+    for (let step = 0; step < 6; step++) {
+      for (let a = 0; a < 300; a++) {
+        const lvl = generate(P, hash(seedBase, a + step * 1000));
+        if (lvl) { lvl.params = P; return lvl; }
+      }
+      P = Object.assign({}, P, { minSave: Math.max(0, P.minSave - 1), traps: Math.max(0, P.traps - 1) });
+      if (P.mech && step >= 2) {
+        const m = {}; for (const k in P.mech) m[k] = 1;
+        P.mech = m;
+      }
+    }
+    return null;
   }
 
   function buildLevel(idx) {
     let P = Object.assign({}, params(idx));
+    if (P.mech) {
+      const lvl = searchLevel(P, idx * 7919 + 13);
+      if (!lvl) throw new Error('Level generation failed for ' + idx);
+      const colIdx = Math.min(COLLECTIONS.length - 1, Math.floor((idx - 1) / 12));
+      const itemIdx = (idx - 1) % 12;
+      lvl.idx = idx;
+      lvl.colIdx = colIdx;
+      lvl.itemIdx = itemIdx;
+      lvl.collection = COLLECTIONS[colIdx];
+      lvl.pieceName = COLLECTIONS[colIdx].pieces[itemIdx] || ('Vitray ' + idx);
+      lvl.limit = lvl.min + lvl.params.slack;
+      return lvl;
+    }
     for (let step = 0; step < 5; step++) {
       for (let a = 0; a < 300; a++) {
         const lvl = generate(P, hash(idx * 7919 + 13, a + step * 1000));
@@ -440,7 +798,57 @@
   const ALL_SHAPES = [
     'round', 'gothic', 'rose', 'pointed_arch', 'hex_medallion', 'domed_mihrab',
     'oval_medallion', 'tiffany_dome', 'triptych_arch', 'crystal_diamond', 'tall_lancet', 'octagon_star',
+    'hexagon', 'apse', 'octagon', 'andalus_arch', 'shamsa', 'iwan', 'lantern', 'moon_gate',
+    'sunburst', 'deco_gate', 'lozenge', 'shield', 'oeil', 'comet', 'astrolabe', 'grand_rose',
   ];
+
+  // ---------- Master's Tower: endless, deterministic floors ----------
+  function towerParams(floor) {
+    const f = Math.max(1, floor | 0);
+    const boss = f % 10 === 0;
+    const ramp = Math.min(1, (f - 1) / 40);
+    const col = COLLECTIONS[(f - 1) % COLLECTIONS.length];
+    const pick = hash(f * 6151 + 3, 11);
+    const mech = {};
+    if (f >= 4) {
+      const kinds = ['prism', 'lock', 'valve'];
+      const first = kinds[pick % 3];
+      mech[first] = 1 + (ramp > 0.5 ? 1 : 0);
+      if (f >= 12 && (boss || pick % 2 === 0)) mech[kinds[(pick + 1) % 3]] = 1;
+      if (f >= 25 && (boss || pick % 5 === 0)) mech[kinds[(pick + 2) % 3]] = 1;
+    }
+    return {
+      n: Math.min(16, 7 + Math.round(ramp * 8) + (boss ? 1 : 0)),
+      c: Math.min(6, 2 + Math.round(ramp * 3) + (boss ? 1 : 0)),
+      open: 0.7,
+      slack: boss ? 0 : 1,
+      minSave: 2 + Math.round(ramp * 2),
+      traps: f < 3 ? 0 : 1 + Math.round(ramp * 2),
+      bias: 0.45,
+      mech,
+      shape: ALL_SHAPES[pick % ALL_SHAPES.length],
+      pool: col.colors,
+    };
+  }
+
+  function buildTowerLevel(floor) {
+    const f = Math.max(1, floor | 0);
+    const col = COLLECTIONS[(f - 1) % COLLECTIONS.length];
+    const P = towerParams(f);
+    const lvl = searchLevel(P, f * 15485863 + 41)
+      || searchLevel(Object.assign({}, P, { mech: {}, n: Math.min(P.n, 12), minSave: 0, traps: 0 }), f * 32452843 + 7)
+      || buildLevel(((f - 1) % 48) + 1);
+    lvl.idx = 0;
+    lvl.isTower = true;
+    lvl.floor = f;
+    lvl.isBoss = f % 10 === 0;
+    lvl.colIdx = (f - 1) % COLLECTIONS.length;
+    lvl.itemIdx = 0;
+    lvl.collection = col;
+    lvl.pieceName = (lvl.isBoss ? 'Muhafız Katı ' : 'Kat ') + f;
+    lvl.limit = lvl.min + ((lvl.params && lvl.params.slack != null) ? lvl.params.slack : 1);
+    return lvl;
+  }
 
   function buildDailyLevel(dayNum) {
     const d = Math.max(1, dayNum | 0);
@@ -479,7 +887,7 @@
     return buildLevel((d % 48) + 1);
   }
 
-  const api = { buildLevel, buildDailyLevel, solveFrom, inside, centroid, params, COLLECTIONS, PALETTE, W, H };
+  const api = { buildLevel, buildDailyLevel, buildTowerLevel, towerParams, solveFrom, solveAdv, inside, centroid, polyArea, shapePoly, params, COLLECTIONS, PALETTE, ALL_SHAPES, WILD, W, H };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SG = api;
 })(typeof window !== 'undefined' ? window : globalThis);

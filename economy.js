@@ -7,6 +7,14 @@
     winBase: 25,
     threeStarBonus: 15,
     firstWinBonus: 20,
+    replayCoins: 8,
+    replayStarBonus: 15,
+    towerUnlockLevel: 10,
+    towerBaseCoins: 30,
+    towerPerFloor: 2,
+    towerFloorCap: 60,
+    towerThreeStar: 15,
+    towerBossCoins: 300,
     streakBonusPerStep: 5,
     streakBonusCap: 25,
     freePourStreak: 3, // Streak >= 3 -> +1 free pour at level start
@@ -57,6 +65,56 @@
     { stars: 72, coins: 600, inv: { plus: 1, solder: 1 }, label: 'Altın Sandık' },
     { stars: 108, coins: 900, inv: { cool: 2, solder: 2, plus: 1 }, label: 'Safir Sandık' },
     { stars: 144, coins: 1500, inv: { cool: 3, solder: 3, plus: 3 }, label: 'Katedral Tacı' },
+    { stars: 200, coins: 1800, inv: { undo: 3, hint: 3 }, label: 'Prizma Sandığı' },
+    { stars: 260, coins: 2200, inv: { cool: 3, solder: 3, plus: 2 }, label: 'Mühür Sandığı' },
+    { stars: 320, coins: 2600, inv: { plus: 3, hint: 3 }, label: 'Fener Sandığı' },
+    { stars: 380, coins: 3200, inv: { cool: 4, solder: 4, plus: 3 }, label: 'Saray Hazinesi' },
+    { stars: 432, coins: 5000, inv: { cool: 5, solder: 5, plus: 5, undo: 5, hint: 5 }, label: 'Ustanın Tacı' },
+  ];
+
+  // ---------- Daily missions (three are drawn per day) ----------
+  const MISSIONS = [
+    { id: 'win3', type: 'win', goal: 3, text: '3 vitray tamamla', coins: 80 },
+    { id: 'win5', type: 'win', goal: 5, text: '5 vitray tamamla', coins: 140, inv: { undo: 1 } },
+    { id: 'star2', type: 'star3', goal: 2, text: '2 vitrayı 3★ ile bitir', coins: 110 },
+    { id: 'star4', type: 'star3', goal: 4, text: '4 vitrayı 3★ ile bitir', coins: 180, inv: { hint: 1 } },
+    { id: 'clean1', type: 'clean', goal: 1, text: 'Güçlendirici kullanmadan 1 vitray bitir', coins: 70 },
+    { id: 'clean3', type: 'clean', goal: 3, text: 'Güçlendirici kullanmadan 3 vitray bitir', coins: 150, inv: { cool: 1 } },
+    { id: 'chain3', type: 'chain', goal: 3, text: 'Tek dökümle 3+ bölmeyi 3 kez doldur', coins: 100 },
+    { id: 'cells40', type: 'cells', goal: 40, text: '40 bölme doldur', coins: 80 },
+    { id: 'cells80', type: 'cells', goal: 80, text: '80 bölme doldur', coins: 140, inv: { solder: 1 } },
+    { id: 'daily1', type: 'daily', goal: 1, text: 'Günün Vitrayı\'nı tamamla', coins: 100 },
+    { id: 'tower1', type: 'tower', goal: 1, text: 'Usta Kulesi\'nde 1 kat çık', coins: 90, needsTower: true },
+    { id: 'tower3', type: 'tower', goal: 3, text: 'Usta Kulesi\'nde 3 kat çık', coins: 170, inv: { plus: 1 }, needsTower: true },
+  ];
+  const MISSION_BONUS = { coins: 150, inv: { hint: 1, cool: 1 } };
+
+  // ---------- Achievements (metric values are supplied by the game) ----------
+  const ACHIEVEMENTS = [
+    { id: 'solved1', metric: 'solved', goal: 1, icon: '🪟', name: 'İlk Işık', desc: 'İlk vitrayını tamamla', coins: 50 },
+    { id: 'solved24', metric: 'solved', goal: 24, icon: '🏛', name: 'Çırak Camcı', desc: '24 vitray tamamla', coins: 200 },
+    { id: 'solved72', metric: 'solved', goal: 72, icon: '🏰', name: 'Kalfa Camcı', desc: '72 vitray tamamla', coins: 500 },
+    { id: 'solved144', metric: 'solved', goal: 144, icon: '👑', name: 'Büyük Usta', desc: '144 vitrayın tamamını bitir', coins: 2000 },
+    { id: 'stars100', metric: 'stars', goal: 100, icon: '⭐', name: 'Yıldız Toplayıcı', desc: '100 yıldız kazan', coins: 250 },
+    { id: 'stars300', metric: 'stars', goal: 300, icon: '🌟', name: 'Takımyıldız', desc: '300 yıldız kazan', coins: 800 },
+    { id: 'stars432', metric: 'stars', goal: 432, icon: '✨', name: 'Kusursuz Gökyüzü', desc: '432 yıldızın tamamını kazan', coins: 3000 },
+    { id: 'perfect10', metric: 'perfect', goal: 10, icon: '💎', name: 'Keskin Göz', desc: '10 vitrayı 3★ ile bitir', coins: 150 },
+    { id: 'perfect50', metric: 'perfect', goal: 50, icon: '🔷', name: 'Kusursuz Döküm', desc: '50 vitrayı 3★ ile bitir', coins: 600 },
+    { id: 'clean10', metric: 'clean', goal: 10, icon: '🧤', name: 'Yalın Usta', desc: 'Güçlendiricisiz 10 vitray bitir', coins: 200 },
+    { id: 'clean50', metric: 'clean', goal: 50, icon: '🖐', name: 'Saf Zanaat', desc: 'Güçlendiricisiz 50 vitray bitir', coins: 700 },
+    { id: 'chain5', metric: 'chain', goal: 5, icon: '🌊', name: 'Cam Selâlesi', desc: 'Tek dökümle 5 bölme doldur', coins: 200 },
+    { id: 'chain8', metric: 'chain', goal: 8, icon: '🌋', name: 'Erimiş Nehir', desc: 'Tek dökümle 8 bölme doldur', coins: 500 },
+    { id: 'streak10', metric: 'streak', goal: 10, icon: '🔥', name: 'Söndürülemez', desc: '10 vitraylık kazanma serisi yap', coins: 300 },
+    { id: 'daily7', metric: 'daily', goal: 7, icon: '📅', name: 'Sadık Çırak', desc: 'Günün Vitrayı\'nı 7 gün üst üste bitir', coins: 400 },
+    { id: 'daily30', metric: 'daily', goal: 30, icon: '🗓', name: 'Atölye Ruhu', desc: 'Günün Vitrayı\'nı 30 gün üst üste bitir', coins: 1500 },
+    { id: 'tower10', metric: 'tower', goal: 10, icon: '🗼', name: 'Kule Bekçisi', desc: 'Usta Kulesi\'nde 10. katı geç', coins: 300 },
+    { id: 'tower30', metric: 'tower', goal: 30, icon: '🏯', name: 'Bulut Katı', desc: 'Usta Kulesi\'nde 30. katı geç', coins: 900 },
+    { id: 'tower75', metric: 'tower', goal: 75, icon: '🌌', name: 'Göğe Değen', desc: 'Usta Kulesi\'nde 75. katı geç', coins: 2500 },
+    { id: 'cols3', metric: 'cols', goal: 3, icon: '📚', name: 'Koleksiyoncu', desc: '3 koleksiyonu tamamla', coins: 400 },
+    { id: 'cols12', metric: 'cols', goal: 12, icon: '🏆', name: 'Müze Küratörü', desc: '12 koleksiyonun tamamını bitir', coins: 2500 },
+    { id: 'masters3', metric: 'masters', goal: 3, icon: '🎖', name: 'Koleksiyon Ustası', desc: '3 koleksiyonu 36★ ile bitir', coins: 1000 },
+    { id: 'missions25', metric: 'missions', goal: 25, icon: '📜', name: 'Görev Adamı', desc: '25 günlük görev tamamla', coins: 500 },
+    { id: 'cells1000', metric: 'cells', goal: 1000, icon: '🫗', name: 'Bin Bölme', desc: 'Toplam 1.000 bölme doldur', coins: 400 },
   ];
 
   const IAP_PRODUCTS = [
@@ -153,10 +211,14 @@
     },
   ];
 
+  // Calendar day number. Uses the local date directly so DST changes never repeat or skip a day.
   function localToday() {
     const now = new Date();
-    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    return Math.floor(midnight / 86400000);
+    return Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
+  }
+  function legacyToday() {
+    const now = new Date();
+    return Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 86400000);
   }
 
   function createDefaultState() {
@@ -178,6 +240,12 @@
       puzzleDay: -1,
       puzzleStreak: 0,
       puzzleBest: 0,
+      towerFloor: 1,
+      towerBest: 0,
+      missions: null,
+      claimedAch: {},
+      notifiedAch: {},
+      stats: { clean: 0, maxChain: 0, maxStreak: 0, cells: 0, missions: 0 },
       events: [],
     };
   }
@@ -191,6 +259,23 @@
       this.d.claimedCols = Object.assign({}, (saved && saved.claimedCols) || {});
       this.d.claimedMasterCols = Object.assign({}, (saved && saved.claimedMasterCols) || {});
       this.d.claimedStarChests = Object.assign({}, (saved && saved.claimedStarChests) || {});
+      this.d.claimedAch = Object.assign({}, (saved && saved.claimedAch) || {});
+      this.d.notifiedAch = Object.assign({}, (saved && saved.notifiedAch) || {});
+      this.d.stats = Object.assign({}, def.stats, (saved && saved.stats) || {});
+      // Saves from the old day counter: keep login and puzzle streaks alive across the change
+      if (saved && !saved.dayV2) {
+        const shift = localToday() - legacyToday();
+        if (shift) {
+          if (this.d.rewardDay >= 0) this.d.rewardDay += shift;
+          if (this.d.puzzleDay >= 0) this.d.puzzleDay += shift;
+        }
+      }
+      this.d.dayV2 = true;
+    }
+
+    grant(reward) {
+      if (reward.coins) this.d.coins += reward.coins;
+      if (reward.inv) for (const k in reward.inv) this.d.inv[k] = (this.d.inv[k] || 0) + reward.inv[k];
     }
 
     toJSON() {
@@ -255,8 +340,16 @@
       return this.d.streak >= CONFIG.freePourStreak ? 1 : 0;
     }
 
-    onLevelWin({ stars, isFirstWin }) {
+    onLevelWin({ stars, isFirstWin, newStars }) {
+      // Replays pay a small fee plus any newly earned stars, so old levels cannot be farmed
+      if (!isFirstWin) {
+        const totalEarned = CONFIG.replayCoins + Math.max(0, newStars || 0) * CONFIG.replayStarBonus;
+        this.d.winsSinceInter = (this.d.winsSinceInter || 0) + 1;
+        this.earn(totalEarned, 'level_replay');
+        return { totalEarned, streak: this.d.streak || 0, piggyAdded: 0, piggyTotal: this.d.piggy, isReplay: true };
+      }
       this.d.streak = (this.d.streak || 0) + 1;
+      this.d.stats.maxStreak = Math.max(this.d.stats.maxStreak || 0, this.d.streak);
       const base = CONFIG.winBase + (stars === 3 ? CONFIG.threeStarBonus : 0);
       const first = isFirstWin ? CONFIG.firstWinBonus : 0;
       const streakBonus = Math.min(CONFIG.streakBonusCap, this.d.streak * CONFIG.streakBonusPerStep);
@@ -332,7 +425,7 @@
 
     onDailyPuzzleWin(today = localToday()) {
       if (this.isDailyPuzzleDone(today)) {
-        return { alreadyDone: true, streak: this.d.puzzleStreak || 1, coins: 35, piggyAdded: 0, piggyTotal: this.d.piggy };
+        return { alreadyDone: true, streak: this.d.puzzleStreak || 1, coins: 0, piggyAdded: 0, piggyTotal: this.d.piggy };
       }
       const s = this.dailyPuzzleStreakIfWon(today);
       this.d.puzzleDay = today;
@@ -349,6 +442,128 @@
         piggyAdded: this.d.piggy - prevPiggy,
         piggyTotal: this.d.piggy,
       };
+    }
+
+    // ---------- Master's Tower ----------
+    towerFloorReward(floor) {
+      const capped = Math.min(floor, CONFIG.towerFloorCap);
+      return CONFIG.towerBaseCoins + capped * CONFIG.towerPerFloor;
+    }
+
+    onTowerWin({ floor, stars }) {
+      const firstClear = floor >= (this.d.towerFloor || 1);
+      if (!firstClear) {
+        return { totalEarned: 0, floor, streak: this.d.streak || 0, piggyAdded: 0, piggyTotal: this.d.piggy, isReplay: true };
+      }
+      const isBoss = floor % 10 === 0;
+      let totalEarned = this.towerFloorReward(floor) + (stars === 3 ? CONFIG.towerThreeStar : 0);
+      if (isBoss) {
+        totalEarned += CONFIG.towerBossCoins;
+        this.d.inv.cool = (this.d.inv.cool || 0) + 1;
+        this.d.inv.solder = (this.d.inv.solder || 0) + 1;
+      }
+      const prevPiggy = this.d.piggy;
+      this.d.piggy = Math.min(CONFIG.piggyCap, this.d.piggy + CONFIG.piggyPerWin);
+      this.d.towerFloor = floor + 1;
+      this.d.towerBest = Math.max(this.d.towerBest || 0, floor);
+      this.d.winsSinceInter = (this.d.winsSinceInter || 0) + 1;
+      this.earn(totalEarned, 'tower_floor');
+      return { totalEarned, floor, isBoss, streak: this.d.streak || 0, piggyAdded: this.d.piggy - prevPiggy, piggyTotal: this.d.piggy };
+    }
+
+    // ---------- Daily Missions ----------
+    ensureMissions(towerOpen, today = localToday()) {
+      const cur = this.d.missions;
+      if (cur && cur.day === today) return cur;
+      const pool = MISSIONS.filter(m => towerOpen || !m.needsTower);
+      let seed = (today * 2654435761) >>> 0;
+      const next = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+      const picked = [], types = new Set();
+      for (let guard = 0; picked.length < 3 && guard < 200; guard++) {
+        const m = pool[Math.floor(next() * pool.length)];
+        if (types.has(m.type)) continue;
+        types.add(m.type); picked.push(m.id);
+      }
+      this.d.missions = { day: today, ids: picked, prog: {}, claimed: {}, bonus: false };
+      this.save();
+      return this.d.missions;
+    }
+
+    // Returns the missions completed by this update
+    bumpMission(type, amount = 1, today = localToday()) {
+      const cur = this.d.missions;
+      if (!cur || cur.day !== today) return [];
+      const finished = [];
+      cur.ids.forEach(id => {
+        const m = MISSIONS.find(x => x.id === id);
+        if (!m || m.type !== type) return;
+        const before = cur.prog[id] || 0;
+        const after = Math.min(m.goal, before + amount);
+        cur.prog[id] = after;
+        if (before < m.goal && after >= m.goal) finished.push(m);
+      });
+      if (finished.length) this.save();
+      return finished;
+    }
+
+    claimMission(id, today = localToday()) {
+      const cur = this.d.missions;
+      const m = MISSIONS.find(x => x.id === id);
+      if (!cur || cur.day !== today || !m || !cur.ids.includes(id)) return null;
+      if (cur.claimed[id] || (cur.prog[id] || 0) < m.goal) return null;
+      cur.claimed[id] = true;
+      this.d.stats.missions = (this.d.stats.missions || 0) + 1;
+      this.grant(m);
+      this.track('mission_claimed', { id });
+      this.save();
+      return m;
+    }
+
+    claimMissionBonus(today = localToday()) {
+      const cur = this.d.missions;
+      if (!cur || cur.day !== today || cur.bonus) return null;
+      if (!cur.ids.every(id => cur.claimed[id])) return null;
+      cur.bonus = true;
+      this.grant(MISSION_BONUS);
+      this.track('mission_bonus', {});
+      this.save();
+      return MISSION_BONUS;
+    }
+
+    missionClaimableCount(today = localToday()) {
+      const cur = this.d.missions;
+      if (!cur || cur.day !== today) return 0;
+      let n = cur.ids.filter(id => {
+        const m = MISSIONS.find(x => x.id === id);
+        return m && !cur.claimed[id] && (cur.prog[id] || 0) >= m.goal;
+      }).length;
+      if (!cur.bonus && cur.ids.every(id => cur.claimed[id])) n++;
+      return n;
+    }
+
+    // ---------- Achievements ----------
+    achievementReady(a, metrics) {
+      return !this.d.claimedAch[a.id] && (metrics[a.metric] || 0) >= a.goal;
+    }
+
+    claimAchievement(id, metrics) {
+      const a = ACHIEVEMENTS.find(x => x.id === id);
+      if (!a || !this.achievementReady(a, metrics)) return null;
+      this.d.claimedAch[id] = true;
+      this.grant(a);
+      this.track('achievement_claimed', { id });
+      this.save();
+      return a;
+    }
+
+    // Achievements that became claimable since the player was last told about them
+    takeNewAchievements(metrics) {
+      const fresh = ACHIEVEMENTS.filter(a => this.achievementReady(a, metrics) && !this.d.notifiedAch[a.id]);
+      if (fresh.length) {
+        fresh.forEach(a => { this.d.notifiedAch[a.id] = true; });
+        this.save();
+      }
+      return fresh;
     }
 
     // ---------- Star Chest Milestones ----------
@@ -410,7 +625,7 @@
     }
   }
 
-  const api = { Economy, CONFIG, BOOSTERS, DAILY_REWARDS, STAR_CHESTS, IAP_PRODUCTS, localToday, createDefaultState };
+  const api = { Economy, CONFIG, BOOSTERS, DAILY_REWARDS, STAR_CHESTS, MISSIONS, MISSION_BONUS, ACHIEVEMENTS, IAP_PRODUCTS, localToday, createDefaultState };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SGEcon = api;
 })(typeof window !== 'undefined' ? window : globalThis);
